@@ -49,3 +49,20 @@ def test_alt_gold_accepts_tied_answers():
     from nl_to_sql.evaluation import grade_against
     golds = [R(["name"], [("Music",)]), R(["name"], [("Music",), ("Music",)])]
     assert grade_against(golds, R(["name", "n"], [("Music", 198), ("Music", 198)]))
+
+
+def test_enterprise_gold_matches_original_gold():
+    """Remapped gold SQL on the 274-table testbed returns the same rows as on the source DBs."""
+    import pytest
+    from nl_to_sql import config
+    from nl_to_sql.db import Database
+    from nl_to_sql.evaluation import gold_results, load_dataset
+    if not (config.ROOT / "data" / "enterprise.db").exists():
+        pytest.skip("run scripts/build_enterprise_db.py first")
+    ent = Database("enterprise")
+    originals = {i["id"]: i for i in load_dataset()}
+    for item in load_dataset("enterprise"):
+        orig = originals[item["id"].removeprefix("e-")]
+        a = gold_results(Database(orig["db"]), orig)
+        b = gold_results(ent, item)
+        assert all(results_match(x, y) for x, y in zip(a, b)) and len(a) == len(b), item["id"]

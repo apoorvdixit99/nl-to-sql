@@ -1,4 +1,5 @@
-"""v2: LangGraph agent with tools, self-correction, and human approval via interrupt().
+"""LangGraph agent (v2+) with tools, self-correction, human approval via interrupt(),
+and (v4) schema retrieval for large databases.
 
 Graph:  START -> agent --(tool calls)--> tools --(not done)--> agent ...
                    |                       |
@@ -23,17 +24,26 @@ from langgraph.types import Command, interrupt
 from . import config
 from .chain import Answer
 from .db import Database, QueryResult
+from .retrieval import TableIndex
 from .safety import classify, to_sqlglot_dialect
+
+LEGEND = ("columns, PK = primary key, -> = foreign key, {...} = the column's full set of values, "
+          "[a .. b] = value range")
+
+FULL_SCHEMA_SECTION = """Tables ({legend}):
+{schema}"""
+
+RETRIEVE_SCHEMA_SECTION = """This database has {n} tables. The ones most relevant to each question are listed with their columns ({legend}) in the user's message. If a table you need isn't listed, find it with search_tables or describe_tables.
+All table names: {names}"""
 
 SYSTEM_TEMPLATE = """You answer questions about a {dialect} database by running SQL with your tools.
 
-Tables (columns, PK = primary key, -> = foreign key, {{...}} = the column's full set of values, [a .. b] = value range):
-{schema}
+{schema_section}
 {examples}
 How to work:
 - Usually you can answer with ONE run_query call with final=true. The rows are shown straight to the user, so don't summarize them afterwards.
 - Before that call, write at most one short sentence stating any assumption.
-- Use the listed values and ranges exactly (spelling, type, date format). Only explore with describe_tables or run_query final=false when the schema leaves you unsure.
+- Use the listed values and ranges exactly (spelling, type, date format). Only explore with describe_tables, search_tables or run_query final=false when the schema leaves you unsure.
 - If a query fails, or returns no rows when you expected some, investigate and retry.
 - Return exactly what was asked. "Which/who has the most X" means only the top row (all tied rows if there is a tie), not a ranking. Respect wording like "after the first", "rounded to 1 decimal", or the columns requested.
 - Quote identifiers that contain spaces. When listing many rows, add LIMIT 50 unless the user asks for everything.
@@ -67,6 +77,16 @@ TOOLS = [
         },
     },
 ]
+
+SEARCH_TOOL = {
+    "name": "search_tables",
+    "description": "Keyword search over table and column names. Returns matching tables with their columns.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"query": {"type": "string"}},
+        "required": ["query"],
+    },
+}
 
 
 class AgentState(TypedDict, total=False):
@@ -115,17 +135,32 @@ class SQLAgent:
             max_tokens=config.MAX_TOKENS,
             output_config={"effort": config.EFFORT},
         )
-        self.llm = llm.bind_tools(TOOLS)
+        full_schema = db.compact_schema(hints=config.VALUE_HINTS)
+        mode = config.SCHEMA_MODE
+        if mode == "auto":
+            mode = "full" if len(full_schema) <= config.FULL_SCHEMA_MAX_CHARS else "retrieve"
+        self.schema_mode = mode
+        self.index = TableIndex(db) if mode == "retrieve" else None
+
+        if mode == "retrieve":
+            section = RETRIEVE_SCHEMA_SECTION.format(
+                n=len(db.table_names()), legend=LEGEND, names=", ".join(db.table_names()))
+            self.llm = llm.bind_tools(TOOLS + [SEARCH_TOOL])
+        else:
+            section = FULL_SCHEMA_SECTION.format(legend=LEGEND, schema=full_schema)
+            self.llm = llm.bind_tools(TOOLS)
         # Tools + this system prompt are identical for every question: cache them.
+        # (In retrieve mode the per-question tables go in the user message, keeping this stable.)
         self.system = SystemMessage(content=[{
             "type": "text",
             "text": SYSTEM_TEMPLATE.format(
                 dialect=db.dialect,
-                schema=db.compact_schema(hints=config.VALUE_HINTS),
+                schema_section=section,
                 examples=_examples_block(db.name) if config.FEW_SHOT else "",
             ),
             "cache_control": {"type": "ephemeral"},
         }])
+        self._context_tables: list[str] = []
         self.graph = self._build()
         self._thread: dict | None = None
         self._question = ""
@@ -173,10 +208,15 @@ class SQLAgent:
 
     def _run_tool(self, name: str, args: dict, ai: AIMessage, update: dict) -> str:
         if name == "describe_tables":
+            if not args.get("tables"):
+                return "Error: name the tables to describe."
             try:
-                return self.db.schema(args.get("tables") or None)
+                return self.db.schema(args["tables"][:10])
             except Exception as e:
                 return f"Error: {e}"
+        if name == "search_tables" and self.index:
+            found = self.index.select(args.get("query", ""))
+            return "\n".join(self.index.lines[t] for t in found) or "No matching tables."
         if name != "run_query":
             return f"Error: unknown tool {name}"
 
@@ -216,7 +256,12 @@ class SQLAgent:
     def start(self, question: str) -> Answer | Pending:
         self._question = question
         self._thread = {"configurable": {"thread_id": str(uuid.uuid4())}}
-        return self._run({"messages": [HumanMessage(content=question)]})
+        content = question
+        if self.index:
+            self._context_tables = self.index.select(question)
+            tables = "\n".join(self.index.lines[t] for t in self._context_tables)
+            content = f"Relevant tables:\n{tables}\n\nQuestion: {question}"
+        return self._run({"messages": [HumanMessage(content=content)]})
 
     def resume(self, approved: bool) -> Answer | Pending:
         return self._run(Command(resume=approved))
@@ -241,6 +286,8 @@ class SQLAgent:
             llm_calls=state.get("llm_calls", 0),
             input_tokens=sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ais),
             output_tokens=sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ais),
+            cache_read_tokens=sum(((m.usage_metadata or {}).get("input_token_details") or {}).get("cache_read", 0) for m in ais),
+            context_tables=list(self._context_tables),
         )
         if state.get("result") is not None:
             a.result = QueryResult(**state["result"])

@@ -153,3 +153,36 @@ def test_value_hints_and_few_shot_toggle(db, monkeypatch):
     llm = ScriptedLLM(call("SELECT 1"))
     SQLAgent(db, llm=llm).start("x")
     assert "[2009-01-01" not in llm.seen[0][0].content[0]["text"]
+
+
+# ---- v4: retrieval on the 274-table testbed ----------------------------------
+
+@pytest.fixture
+def enterprise():
+    if not (config.ROOT / "data" / "enterprise.db").exists():
+        pytest.skip("run scripts/build_enterprise_db.py first")
+    return Database("enterprise")
+
+
+def test_auto_mode_picks_full_for_small_and_retrieve_for_large(db, enterprise):
+    assert SQLAgent(db, llm=ScriptedLLM()).schema_mode == "full"
+    assert SQLAgent(enterprise, llm=ScriptedLLM()).schema_mode == "retrieve"
+
+
+def test_retrieved_tables_go_in_user_message(enterprise):
+    llm = ScriptedLLM(call('SELECT COUNT(*) FROM "music_Track"'))
+    a = SQLAgent(enterprise, llm=llm).start("Music store: How many tracks are in the Grunge playlist?")
+    system_text = llm.seen[0][0].content[0]["text"]
+    user_text = llm.seen[0][1].content
+    assert "All table names:" in system_text and "music_Track(" not in system_text
+    assert "music_PlaylistTrack(" in user_text and "music_Playlist(" in user_text
+    assert a.status == "ok" and "music_PlaylistTrack" in a.context_tables
+    assert len(a.context_tables) <= config.RETRIEVE_MAX_TABLES
+
+
+def test_search_tables_tool(enterprise):
+    search = AIMessage(content="", tool_calls=[
+        {"name": "search_tables", "args": {"query": "order details discount"}, "id": "s1"}])
+    llm = ScriptedLLM(search, call("SELECT 1"))
+    SQLAgent(enterprise, llm=llm).start("Northwind shop: anything")
+    assert '"shop_Order Details"(' in llm.seen[1][-1].content or "shop_Order Details(" in llm.seen[1][-1].content

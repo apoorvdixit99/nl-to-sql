@@ -4,7 +4,7 @@ UI-agnostic: callers pass an `approve` callback for queries that need confirmati
 so the same core works for the CLI now and Streamlit later.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from langchain_anthropic import ChatAnthropic
@@ -41,6 +41,8 @@ class Answer:
     llm_calls: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_tokens: int = 0     # part of input_tokens served from the prompt cache (~0.1x price)
+    context_tables: list[str] = field(default_factory=list)  # v4: tables retrieved for the prompt
 
 
 _SQL_BLOCK = re.compile(r"```sql\s*(.*?)```", re.DOTALL | re.IGNORECASE)

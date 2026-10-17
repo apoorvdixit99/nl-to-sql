@@ -45,3 +45,27 @@ All eval numbers are single runs on `claude-haiku-5-5` at effort `low`, so ±1 q
 | v3 + few-shot | 42 | 44 | 124k | $0.018 |
 
 Takeaway: Haiku 5.5 now saturates this set, so later stages need a harder benchmark.
+
+## v4: large schemas (`nl_to_sql/retrieval.py`)
+- **Testbed** (`scripts/build_enterprise_db.py`, no LLM calls), 274 tables in total:
+  - Chinook's tables copied as `music_*` and Northwind's as `shop_*`, with constraints and data kept (table names rewritten with sqlglot).
+  - 250 generated tables across about 30 domains, including deliberately confusing names (`rail_track_maintenance`, `hr_employee_shifts`, `events_playlist_requests`).
+  - Eval questions are remapped automatically. Table names in the reference queries are rewritten with sqlglot, and each question gets a "Music store:" / "Northwind shop:" prefix. A test checks the remapped reference answers match the originals.
+- **Retriever** (no LLM calls, no new dependencies):
+  - BM25 over one document per table: the table name counted three times, plus column names, value hints and FK targets.
+  - Takes the top 6 hits, then adds bridge tables (linked to two or more hits) and FK neighbours of the top 3 hits, capped at 14 tables.
+- **Agent integration** (`SCHEMA_MODE=auto`): if the compact schema is over about 20k characters, the agent switches to retrieve mode:
+  - The system prompt (cached) holds only the instructions and all table names.
+  - The retrieved tables go in the user message.
+  - A `search_tables` tool lets the agent recover when retrieval misses a table.
+- **Free recall check** (`scripts/retrieval_recall.py`): covers every needed table for 42/42 questions (40/42 without the domain prefix), averaging 8.7 of 274 tables.
+- `langchain-community`'s deprecated `SQLDatabase` was replaced with plain SQLAlchemy inspection, which only loads the tables it needs.
+
+| Run (enterprise, 274 tables) | Accuracy | Input tok (cached) | Cost |
+|---|---|---|---|
+| **retrieve** | **42/43** | 201k (136k) | **$0.014** |
+| full schema | 41/43 | 1.41M (1.38M) | $0.025 (~$0.14 without caching) |
+
+Remaining misses:
+- `ch17`: Haiku keeps the first year's NULL row despite "after the first". This is a target for v5's answer check.
+- `nw09`: an ambiguous wording, now accepted both ways.

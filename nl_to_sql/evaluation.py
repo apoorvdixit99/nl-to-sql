@@ -14,6 +14,9 @@ from itertools import combinations
 from pathlib import Path
 from typing import Callable
 
+import sqlglot
+from sqlglot import exp
+
 from . import config
 from .db import Database, QueryResult
 
@@ -22,8 +25,33 @@ RESULTS_DIR = config.ROOT / "evals" / "results"
 
 
 def load_dataset(db: str | None = None, ids: list[str] | None = None) -> list[dict]:
+    """db="enterprise" returns every question remapped onto the 274-table testbed."""
     items = json.loads(DATASET.read_text(encoding="utf-8"))
+    if db == "enterprise":
+        return [to_enterprise(i) for i in items if not ids or i["id"] in ids]
     return [i for i in items if (not db or i["db"] == db) and (not ids or i["id"] in ids)]
+
+
+ENTERPRISE_PREFIX = {"chinook": ("music", "Music store"), "northwind": ("shop", "Northwind shop")}
+
+
+def rename_tables(sql: str, prefix: str) -> str:
+    """Prefix every real table reference (not CTE names) using sqlglot, e.g. Track -> music_Track."""
+    tree = sqlglot.parse_one(sql, read="sqlite")
+    ctes = {c.alias for c in tree.find_all(exp.CTE)}
+    for t in tree.find_all(exp.Table):
+        if t.name not in ctes:
+            t.set("this", exp.to_identifier(f"{prefix}_{t.name}", quoted=True))
+    return tree.sql(dialect="sqlite")
+
+
+def to_enterprise(item: dict) -> dict:
+    prefix, label = ENTERPRISE_PREFIX[item["db"]]
+    out = dict(item, db="enterprise", id=f"e-{item['id']}", question=f"{label}: {item['question']}")
+    if item.get("gold_sql"):
+        out["gold_sql"] = rename_tables(item["gold_sql"], prefix)
+    out["alt_gold_sql"] = [rename_tables(s, prefix) for s in item.get("alt_gold_sql", [])]
+    return out
 
 
 # ---- result matching -------------------------------------------------------
@@ -110,6 +138,7 @@ def run(items: list[dict], make_runner: Callable[[Database], object], label: str
         rows.append({
             "id": item["id"], "level": item["level"], "pass": passed,
             "status": answer.status, "sql": answer.sql, "note": answer.note, "error": answer.error,
+            "context_tables": answer.context_tables, "cache_read_tokens": answer.cache_read_tokens,
             "llm_calls": answer.llm_calls, "input_tokens": answer.input_tokens,
             "output_tokens": answer.output_tokens, "seconds": round(secs, 1),
         })
@@ -125,16 +154,20 @@ def summarize(rows: list[dict], label: str) -> dict:
         if sub:
             by_level[lvl] = f"{sum(r['pass'] for r in sub)}/{len(sub)}"
     tin = sum(r["input_tokens"] for r in rows)
+    tcache = sum(r.get("cache_read_tokens", 0) for r in rows)
     tout = sum(r["output_tokens"] for r in rows)
     pin, pout = config.PRICING.get(config.MODEL, (0, 0))
+    # Cache reads bill at ~10% of the input price (cache writes' 1.25x is ignored here).
+    cost = (tin - tcache) / 1e6 * pin + tcache / 1e6 * pin * 0.1 + tout / 1e6 * pout
     summary = {
         "label": label, "model": config.MODEL, "effort": config.EFFORT,
-        "features": {"value_hints": config.VALUE_HINTS, "few_shot": config.FEW_SHOT},
+        "features": {"value_hints": config.VALUE_HINTS, "few_shot": config.FEW_SHOT,
+                     "schema_mode": config.SCHEMA_MODE},
         "accuracy": f"{sum(r['pass'] for r in rows)}/{len(rows)}",
         "by_level": by_level,
         "llm_calls": sum(r["llm_calls"] for r in rows),
-        "input_tokens": tin, "output_tokens": tout,
-        "est_cost_usd": round(tin / 1e6 * pin + tout / 1e6 * pout, 4),
+        "input_tokens": tin, "cache_read_tokens": tcache, "output_tokens": tout,
+        "est_cost_usd": round(cost, 4),
         "failed": [r["id"] for r in rows if not r["pass"]],
         "rows": rows,
     }

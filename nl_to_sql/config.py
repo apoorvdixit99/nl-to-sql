@@ -27,11 +27,21 @@ VALUE_HINTS = True       # add distinct values / date ranges to the schema promp
 HINT_MAX_VALUES = 12     # list a text column's values only if it has at most this many
 FEW_SHOT = False         # add worked examples from nl_to_sql/examples/<db>.json
 
+# --- Large schemas (v4) ---
+# "full": whole compact schema in the prompt. "retrieve": only tables relevant to the question.
+# "auto": retrieve when the compact schema is longer than FULL_SCHEMA_MAX_CHARS.
+SCHEMA_MODE = "auto"
+FULL_SCHEMA_MAX_CHARS = 20000   # ~5k tokens
+RETRIEVE_TOP_K = 6              # BM25 hits before FK expansion
+RETRIEVE_MAX_TABLES = 14        # after FK expansion
+
 # --- Databases ---
 # Any SQLAlchemy URL works here, e.g. "postgresql+psycopg://user:pw@host/db".
 DATABASES = {
     "chinook": f"sqlite:///{ROOT / 'data' / 'chinook.db'}",
     "northwind": f"sqlite:///{ROOT / 'data' / 'northwind.db'}",
+    # Large-schema testbed (274 tables): build with scripts/build_enterprise_db.py
+    "enterprise": f"sqlite:///{ROOT / 'data' / 'enterprise.db'}",
 }
 DEFAULT_DB = "chinook"
 

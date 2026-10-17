@@ -2,8 +2,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from langchain_community.utilities import SQLDatabase
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import MetaData, Table, create_engine, inspect, text
+from sqlalchemy.schema import CreateTable
 
 from . import config
 
@@ -17,35 +17,53 @@ class QueryResult:
 
 
 class Database:
-    """Thin wrapper over SQLAlchemy + LangChain's SQLDatabase (used for schema extraction)."""
+    """Thin wrapper over a SQLAlchemy engine: schema text for prompts, profiling, execution."""
 
     def __init__(self, name: str):
         if name not in config.DATABASES:
             raise ValueError(f"Unknown database '{name}'. Options: {', '.join(config.DATABASES)}")
         self.name = name
         self.engine = create_engine(config.DATABASES[name])
-        self._lc_db = SQLDatabase(self.engine, sample_rows_in_table_info=config.SAMPLE_ROWS)
+        self._compact: dict[bool, dict[str, str]] = {}
 
     @property
     def dialect(self) -> str:
         return self.engine.dialect.name
 
     def table_names(self) -> list[str]:
-        return sorted(self._lc_db.get_usable_table_names())
+        return sorted(inspect(self.engine).get_table_names())
 
     def schema(self, tables: list[str] | None = None) -> str:
-        """CREATE TABLE statements plus a few sample rows per table."""
-        return self._lc_db.get_table_info(tables)
+        """CREATE TABLE statements plus a few sample rows per table (only the tables asked for)."""
+        known = set(self.table_names())
+        tables = tables or sorted(known)
+        missing = [t for t in tables if t not in known]
+        if missing:
+            raise ValueError(f"Unknown table(s): {', '.join(missing)}")
+        q = self.engine.dialect.identifier_preparer.quote
+        parts = []
+        with self.engine.connect() as conn:
+            for t in tables:
+                table = Table(t, MetaData(), autoload_with=conn)
+                ddl = str(CreateTable(table).compile(self.engine)).strip()
+                res = conn.execute(text(f"SELECT * FROM {q(t)} LIMIT {config.SAMPLE_ROWS}"))
+                cols = list(res.keys())
+                rows = ["\t".join(str(v)[:100] for v in r) for r in res]
+                sample = f"/*\n{len(rows)} rows from {t} table:\n" + "\t".join(cols) + "\n" + "\n".join(rows) + "\n*/"
+                parts.append(f"{ddl}\n\n{sample}")
+        return "\n\n".join(parts)
 
-    def compact_schema(self, hints: bool = False) -> str:
-        """One line per table: columns with types, PK and FK markers. Much cheaper than schema().
+    def compact_lines(self, hints: bool = False) -> dict[str, str]:
+        """{table: one-line summary} with columns, types, PK and FK markers (cached).
 
         hints=True appends value hints from profile(): {'a','b'} for low-cardinality text
         columns, [min .. max] for date columns, so the model gets formats/codes right.
         """
+        if hints in self._compact:
+            return self._compact[hints]
         insp = inspect(self.engine)
         profile = self.profile() if hints else {}
-        lines = []
+        lines = {}
         for table in self.table_names():
             pk = set(insp.get_pk_constraint(table).get("constrained_columns") or [])
             fks = {}
@@ -63,8 +81,25 @@ class Database:
                 if hint:
                     desc += f" {hint}"
                 cols.append(desc)
-            lines.append(f"{table}({', '.join(cols)})")
-        return "\n".join(lines)
+            lines[table] = f"{table}({', '.join(cols)})"
+        self._compact[hints] = lines
+        return lines
+
+    def compact_schema(self, hints: bool = False, tables: list[str] | None = None) -> str:
+        lines = self.compact_lines(hints)
+        return "\n".join(lines[t] for t in (tables or lines))
+
+    def foreign_keys(self) -> dict[str, set[str]]:
+        """Undirected FK adjacency: {table: {tables it references or is referenced by}}."""
+        insp = inspect(self.engine)
+        graph: dict[str, set[str]] = {t: set() for t in self.table_names()}
+        for t in graph:
+            for fk in insp.get_foreign_keys(t):
+                ref = fk["referred_table"]
+                if ref in graph and ref != t:
+                    graph[t].add(ref)
+                    graph[ref].add(t)
+        return graph
 
     # ---- value profiling (free: plain SQL, no LLM) ---------------------------
 
