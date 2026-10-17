@@ -1,0 +1,8 @@
+[
+  {"question": "Which media type is used by the most tracks?",
+   "sql": "SELECT m.Name FROM Track t JOIN MediaType m ON m.MediaTypeId = t.MediaTypeId GROUP BY m.MediaTypeId ORDER BY COUNT(*) DESC LIMIT 1"},
+  {"question": "Monthly invoice count in 2010",
+   "sql": "SELECT CAST(strftime('%m', InvoiceDate) AS INTEGER) AS month, COUNT(*) FROM Invoice WHERE InvoiceDate >= '2010-01-01' AND InvoiceDate < '2011-01-01' GROUP BY month ORDER BY month"},
+  {"question": "Customers with no invoices",
+   "sql": "SELECT c.FirstName || ' ' || c.LastName FROM Customer c WHERE NOT EXISTS (SELECT 1 FROM Invoice i WHERE i.CustomerId = c.CustomerId)"}
+]

@@ -1,0 +1,8 @@
+[
+  {"question": "How many products does each supplier provide? Top 3.",
+   "sql": "SELECT s.CompanyName, COUNT(*) AS n FROM Products p JOIN Suppliers s ON s.SupplierID = p.SupplierID GROUP BY s.SupplierID ORDER BY n DESC LIMIT 3"},
+  {"question": "Revenue (after discount) of order 10248",
+   "sql": "SELECT ROUND(SUM(UnitPrice * Quantity * (1 - Discount)), 2) FROM \"Order Details\" WHERE OrderID = 10248"},
+  {"question": "Orders still not shipped",
+   "sql": "SELECT COUNT(*) FROM Orders WHERE ShippedDate IS NULL"}
+]

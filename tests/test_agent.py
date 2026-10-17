@@ -132,3 +132,24 @@ def test_system_prompt_has_compact_schema(db):
 ])
 def test_classify(sql, kind):
     assert classify(sql) == kind
+
+
+def test_broken_write_is_rejected_before_asking_user(db):
+    llm = ScriptedLLM(call("UPDATE Artistt SET Name = 'x'"), AIMessage(content="CANNOT_ANSWER: gave up"))
+    out = SQLAgent(db, llm=llm).start("rename")
+    assert not isinstance(out, Pending)  # never reached the approval step
+    assert "query not run" in llm.seen[1][-1].content
+
+
+def test_value_hints_and_few_shot_toggle(db, monkeypatch):
+    monkeypatch.setattr(config, "VALUE_HINTS", True)
+    monkeypatch.setattr(config, "FEW_SHOT", False)
+    llm = ScriptedLLM(call("SELECT 1"))
+    SQLAgent(db, llm=llm).start("x")
+    text = llm.seen[0][0].content[0]["text"]
+    assert "InvoiceDate DATETIME [2009-01-01" in text and "Worked examples" not in text
+
+    monkeypatch.setattr(config, "VALUE_HINTS", False)
+    llm = ScriptedLLM(call("SELECT 1"))
+    SQLAgent(db, llm=llm).start("x")
+    assert "[2009-01-01" not in llm.seen[0][0].content[0]["text"]

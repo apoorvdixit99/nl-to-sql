@@ -8,6 +8,7 @@ Built to keep API calls low: the compact schema is in the system prompt (no disc
 round trip), and a successful run_query(final=true) ends the run without asking the
 model to summarize, so the common case is ONE model call per question.
 """
+import json
 import uuid
 from dataclasses import dataclass
 from typing import Annotated, Any, TypedDict
@@ -26,15 +27,16 @@ from .safety import classify, to_sqlglot_dialect
 
 SYSTEM_TEMPLATE = """You answer questions about a {dialect} database by running SQL with your tools.
 
-Tables (columns, PK = primary key, -> = foreign key):
+Tables (columns, PK = primary key, -> = foreign key, {{...}} = the column's full set of values, [a .. b] = value range):
 {schema}
-
+{examples}
 How to work:
 - Usually you can answer with ONE run_query call with final=true. The rows are shown straight to the user, so don't summarize them afterwards.
 - Before that call, write at most one short sentence stating any assumption.
-- Use describe_tables (sample rows) or a run_query with final=false only when you are unsure about values or formats, e.g. date ranges, status codes, spellings.
+- Use the listed values and ranges exactly (spelling, type, date format). Only explore with describe_tables or run_query final=false when the schema leaves you unsure.
 - If a query fails, or returns no rows when you expected some, investigate and retry.
-- Quote identifiers that contain spaces. Add LIMIT 50 when listing rows unless the user asks for everything.
+- Return exactly what was asked. "Which/who has the most X" means only the top row (all tied rows if there is a tie), not a ranking. Respect wording like "after the first", "rounded to 1 decimal", or the columns requested.
+- Quote identifiers that contain spaces. When listing many rows, add LIMIT 50 unless the user asks for everything.
 - Only write INSERT/UPDATE/DELETE/DDL when the user clearly asks to change data. The user is asked to approve those.
 - If the question can't be answered from this database, reply in plain text starting with CANNOT_ANSWER: and the reason."""
 
@@ -95,6 +97,15 @@ def _format_rows(res: QueryResult) -> str:
     return f"{len(res.rows)}{'+' if res.truncated else ''} row(s):\n" + "\n".join(lines)
 
 
+def _examples_block(db_name: str) -> str:
+    path = config.ROOT / "nl_to_sql" / "examples" / f"{db_name}.json"
+    if not path.exists():
+        return ""
+    pairs = json.loads(path.read_text(encoding="utf-8"))
+    body = "\n".join(f"Q: {p['question']}\nSQL: {p['sql']}" for p in pairs)
+    return f"\nWorked examples:\n{body}\n"
+
+
 class SQLAgent:
     def __init__(self, db: Database, permissions: dict[str, str] | None = None, llm: Any = None):
         self.db = db
@@ -108,7 +119,11 @@ class SQLAgent:
         # Tools + this system prompt are identical for every question: cache them.
         self.system = SystemMessage(content=[{
             "type": "text",
-            "text": SYSTEM_TEMPLATE.format(dialect=db.dialect, schema=db.compact_schema()),
+            "text": SYSTEM_TEMPLATE.format(
+                dialect=db.dialect,
+                schema=db.compact_schema(hints=config.VALUE_HINTS),
+                examples=_examples_block(db.name) if config.FEW_SHOT else "",
+            ),
             "cache_control": {"type": "ephemeral"},
         }])
         self.graph = self._build()
@@ -171,6 +186,13 @@ class SQLAgent:
         if policy == "deny":
             update.update(status="denied", sql=sql, kind=kind)
             return f"Blocked: {kind} queries are not allowed."
+        if kind != "read":
+            # Validate before asking the user, so they never approve a query that can't run.
+            # EXPLAIN plans without executing on SQLite, Postgres and MySQL.
+            try:
+                self.db.execute(f"EXPLAIN {sql}", commit=False)
+            except Exception as e:
+                return f"Error (query not run): {e}\nFix the query and try again."
         if policy == "confirm" and not interrupt({"sql": sql, "kind": kind}):
             update.update(status="declined", sql=sql, kind=kind)
             return "The user declined to run this query."

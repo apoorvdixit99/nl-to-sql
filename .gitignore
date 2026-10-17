@@ -2,3 +2,5 @@
 __pycache__/
 .env
 data/*.db
+data/*.profile.json
+evals/*.log

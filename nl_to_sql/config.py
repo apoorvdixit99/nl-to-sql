@@ -11,10 +11,21 @@ load_dotenv(ROOT / ".env")
 MODEL = os.getenv("NL2SQL_MODEL", "claude-haiku-5-5")
 EFFORT = os.getenv("NL2SQL_EFFORT", "low")  # low | medium | high | xhigh | max
 MAX_TOKENS = 16000
+# USD per 1M tokens (input, output), for cost estimates in evals.
+PRICING = {
+    "claude-haiku-5-5": (0.10, 0.50),
+    "claude-sonnet-5-5": (2.00, 10.00),
+    "claude-opus-5-5": (4.00, 20.00),
+}
 
 # --- Agent (v2) ---
 MAX_LLM_CALLS = 6        # per question; caps self-correction loops (and spend)
 TOOL_RESULT_ROWS = 20    # rows of a result shown back to the model
+
+# --- Accuracy features (v3) ---
+VALUE_HINTS = True       # add distinct values / date ranges to the schema prompt
+HINT_MAX_VALUES = 12     # list a text column's values only if it has at most this many
+FEW_SHOT = False         # add worked examples from nl_to_sql/examples/<db>.json
 
 # --- Databases ---
 # Any SQLAlchemy URL works here, e.g. "postgresql+psycopg://user:pw@host/db".

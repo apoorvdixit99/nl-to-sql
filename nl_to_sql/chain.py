@@ -65,7 +65,9 @@ class NLToSQL:
 
     def generate_sql(self, question: str) -> tuple[str | None, str]:
         """Return (sql, note). sql is None if the model says it can't answer."""
-        reply = self.llm.invoke([self._system, HumanMessage(content=question)]).text
+        msg = self.llm.invoke([self._system, HumanMessage(content=question)])
+        self.last_usage = msg.usage_metadata or {}
+        reply = msg.text
         match = _SQL_BLOCK.search(reply)
         if not match:
             return None, reply.replace("CANNOT_ANSWER:", "").strip()
@@ -76,6 +78,9 @@ class NLToSQL:
         answer = Answer(question=question)
         try:
             answer.sql, answer.note = self.generate_sql(question)
+            answer.llm_calls = 1
+            answer.input_tokens = self.last_usage.get("input_tokens", 0)
+            answer.output_tokens = self.last_usage.get("output_tokens", 0)
         except Exception as e:  # API/network errors surface to the UI, not as a crash
             answer.status, answer.error = "error", f"LLM call failed: {e}"
             return answer
