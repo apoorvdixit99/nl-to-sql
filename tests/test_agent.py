@@ -255,3 +255,75 @@ def test_prose_answer_after_exploratory_query_keeps_rows(db):
     a = SQLAgent(db, llm=llm).start("how many tracks")
     assert a.status == "ok" and a.result.rows == [(3503,)] and a.sql == "SELECT COUNT(*) FROM Track"
     assert a.note == "There are 3503 tracks."
+
+
+# ---- v6: memory, configuration, other dialects --------------------------------
+
+def test_memory_passes_earlier_turn_to_follow_up(db):
+    llm = ScriptedLLM(call("SELECT BillingCountry, SUM(Total) FROM Invoice GROUP BY 1"),
+                      call("SELECT BillingCountry, strftime('%Y', InvoiceDate), SUM(Total) FROM Invoice GROUP BY 1, 2"))
+    agent = SQLAgent(db, llm=llm, memory=True)
+    agent.start("revenue by country")
+    agent.start("now split that by year")
+    follow_up = llm.seen[1][-1].content
+    assert "Earlier in this conversation" in follow_up and "revenue by country" in follow_up
+    assert "GROUP BY 1" in follow_up and follow_up.endswith("Question: now split that by year")
+    agent.reset()
+    assert agent.history == []
+
+
+def test_no_memory_by_default(db):
+    llm = ScriptedLLM(call("SELECT 1"), call("SELECT 2"))
+    agent = SQLAgent(db, llm=llm)
+    agent.start("a")
+    agent.start("b")
+    assert llm.seen[1][-1].content == "b"
+
+
+def test_memory_keeps_last_n_turns(db, monkeypatch):
+    monkeypatch.setattr(config, "MEMORY_TURNS", 2)
+    agent = SQLAgent(db, llm=ScriptedLLM(*[call(f"SELECT {i}") for i in range(4)]), memory=True)
+    for i in range(4):
+        agent.start(f"q{i}")
+    assert [q for q, _, _ in agent.history] == ["q2", "q3"]
+
+
+def test_databases_from_environment(monkeypatch):
+    import importlib
+    monkeypatch.setenv("NL2SQL_DB_WAREHOUSE", "postgresql+psycopg://u:p@localhost/wh")
+    importlib.reload(config)
+    try:
+        assert config.DATABASES["warehouse"] == "postgresql+psycopg://u:p@localhost/wh"
+        assert "chinook" in config.DATABASES
+    finally:
+        monkeypatch.delenv("NL2SQL_DB_WAREHOUSE")
+        importlib.reload(config)
+
+
+def test_postgres_reads_use_read_only_transaction(db, monkeypatch):
+    """No Postgres server needed: check the read-only switch is issued for that dialect."""
+    from nl_to_sql.db import QueryResult, ReadOnlyViolation
+    calls = []
+
+    def fake_run(engine, sql, commit, setup=None):
+        calls.append((sql, setup))
+        if sql.startswith("DELETE"):
+            raise RuntimeError("cannot execute DELETE in a read-only transaction")
+        return QueryResult(columns=["n"], rows=[(1,)])
+
+    monkeypatch.setattr(type(db), "dialect", property(lambda self: "postgresql"))
+    monkeypatch.setattr(db, "_run", fake_run)
+    assert db.execute_readonly("SELECT 1").rows == [(1,)]
+    assert calls[-1] == ("SELECT 1", "SET TRANSACTION READ ONLY")
+    with pytest.raises(ReadOnlyViolation):
+        db.execute_readonly("DELETE FROM t")
+
+
+@pytest.mark.parametrize("dialect,sql,kind", [
+    ("postgres", "SELECT * FROM t FOR UPDATE", "read"),
+    ("postgres", "WITH d AS (DELETE FROM t RETURNING *) SELECT * FROM d", "write"),
+    ("mysql", "SELECT `a` FROM `t` LIMIT 5", "read"),
+    ("mysql", "REPLACE INTO t VALUES (1)", "unknown"),  # sqlglot can't parse it; unknown still needs approval
+])
+def test_classify_other_dialects(dialect, sql, kind):
+    assert classify(sql, dialect) == kind

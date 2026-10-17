@@ -5,3 +5,8 @@ rich
 python-dotenv
 langgraph>=1.2
 pytest
+streamlit>=1.40
+pandas
+# Optional drivers for other databases:
+# psycopg[binary]   (Postgres)
+# pymysql           (MySQL)

@@ -16,8 +16,8 @@ console = Console()
 
 HELP = """Type a question in plain English. Commands:
   /tables   list tables      /schema   show full schema
-  /db NAME  switch database  /help     this help
-  /quit     exit"""
+  /db NAME  switch database  /reset    forget the conversation
+  /help     this help        /quit     exit"""
 
 
 def show_sql(sql: str, kind: str | None, style: str = "cyan") -> None:
@@ -101,7 +101,7 @@ def ask_chain(chain: NLToSQL, question: str) -> None:
 
 def make(db_name: str, v1: bool):
     db = Database(db_name)
-    return NLToSQL(db) if v1 else SQLAgent(db)
+    return NLToSQL(db) if v1 else SQLAgent(db, memory=True)
 
 
 def main() -> None:
@@ -126,6 +126,10 @@ def main() -> None:
             break
         if q == "/help":
             console.print(HELP)
+        elif q == "/reset":
+            if hasattr(runner, "reset"):
+                runner.reset()
+            console.print("Conversation cleared.")
         elif q == "/tables":
             console.print(", ".join(runner.db.table_names()))
         elif q == "/schema":

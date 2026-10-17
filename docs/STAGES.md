@@ -103,3 +103,28 @@ Findings:
 - The answer check fired on 1 of 53 questions (a legitimate tie, judged OK), so it adds almost no cost.
 - Self-consistency attempts agreed 3/3 on 25 of 27 hard questions. There's too little diversity to vote on (Haiku 5.5 doesn't accept temperature changes), so it isn't worth 2–3× the cost here.
 - At this difficulty Haiku 5.5 is at the eval's ceiling, so differences between these features are within noise.
+
+## v6: production extras
+- **Streamlit UI** (`app.py`):
+  - Chat history with result tables, SQL in an expander, and model calls/tokens shown per answer.
+  - A running cost estimate in the sidebar.
+  - A database picker, a memory toggle and a "New conversation" button.
+  - Writes show the SQL with **Approve / Decline** buttons. This is the same `Pending` → `resume()` flow the CLI uses.
+  - Tested headlessly with Streamlit's `AppTest` and a scripted fake LLM.
+- **Conversation memory** (`SQLAgent(memory=True)`, on in the CLI and app, off in evals):
+  - The last `MEMORY_TURNS` turns go into the next user message as question + SQL + a peek at the result, not whole transcripts. That keeps token use flat, and each question still runs in a fresh LangGraph thread.
+  - Retrieval searches with the previous question too, so follow-ups get the same tables.
+  - The CLI has `/reset`.
+- **Other databases:**
+  - `NL2SQL_DB_<NAME>=<url>` adds any SQLAlchemy URL.
+  - Postgres/MySQL reads run under `SET TRANSACTION READ ONLY`.
+  - `scripts/copy_database.py` copies a database into any SQLAlchemy URL.
+  - Dialect handling is covered by offline tests (classification, the read-only switch).
+  - **Not verified against a live Postgres/MySQL server.** None is installed here. An embedded-Postgres attempt (PGlite over its socket server) was too unstable on Windows: the server crashed on disconnect, psycopg segfaulted and pg8000 failed the handshake.
+
+| Final regression | Accuracy | Calls | Cost |
+|---|---|---|---|
+| Chinook + Northwind (53) | **53/53** | 55 | $0.011 |
+| Enterprise, 274 tables (53) | **53/53** | 58 | $0.018 |
+
+Live memory check: "Top 3 genres by number of tracks" → "Now show the average track length for those genres". The follow-up reused the top-3 query as a CTE, in 1 call.

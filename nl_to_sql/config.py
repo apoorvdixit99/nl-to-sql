@@ -43,6 +43,9 @@ VERIFY = "flags"
 PLAN = False             # ask for a short plan before multi-step queries (output tokens only)
 CANDIDATES = 1           # self-consistency: >1 runs N independent attempts and votes (N x cost)
 
+# --- Conversation (v6) ---
+MEMORY_TURNS = 3         # earlier turns (question + SQL + result peek) passed to follow-ups
+
 # --- Databases ---
 # Any SQLAlchemy URL works here, e.g. "postgresql+psycopg://user:pw@host/db".
 DATABASES = {
@@ -51,7 +54,12 @@ DATABASES = {
     # Large-schema testbed (274 tables): build with scripts/build_enterprise_db.py
     "enterprise": f"sqlite:///{ROOT / 'data' / 'enterprise.db'}",
 }
-DEFAULT_DB = "chinook"
+# Add more without editing code: NL2SQL_DB_<NAME>=<SQLAlchemy URL>, e.g.
+#   NL2SQL_DB_SALES=postgresql+psycopg://user:pw@host:5432/sales   (pip install "psycopg[binary]")
+#   NL2SQL_DB_SHOP=mysql+pymysql://user:pw@host/shop                (pip install pymysql)
+DATABASES.update({k.removeprefix("NL2SQL_DB_").lower(): v
+                  for k, v in os.environ.items() if k.startswith("NL2SQL_DB_") and v})
+DEFAULT_DB = os.getenv("NL2SQL_DEFAULT_DB", "chinook")
 
 # Sample rows per table included in the schema prompt.
 SAMPLE_ROWS = 3

@@ -140,8 +140,11 @@ def _examples_block(db_name: str) -> str:
 
 
 class SQLAgent:
-    def __init__(self, db: Database, permissions: dict[str, str] | None = None, llm: Any = None):
+    def __init__(self, db: Database, permissions: dict[str, str] | None = None, llm: Any = None,
+                 memory: bool = False):
         self.db = db
+        self.memory = memory  # v6: carry earlier turns into follow-up questions
+        self.history: list[tuple[str, str, str]] = []
         self.permissions = permissions or config.PERMISSIONS
         llm = llm or ChatAnthropic(
             model=config.MODEL,
@@ -320,6 +323,27 @@ class SQLAgent:
     # ---- public API (UI-agnostic) -----------------------------------------
 
     def start(self, question: str) -> Answer | Pending:
+        return self._remember(self._start(question))
+
+    def resume(self, approved: bool) -> Answer | Pending:
+        return self._remember(self._run(Command(resume=approved)))
+
+    def reset(self) -> None:
+        """Forget the conversation (v6 memory)."""
+        self.history.clear()
+
+    def _remember(self, out: Answer | Pending) -> Answer | Pending:
+        if self.memory and isinstance(out, Answer) and out.status == "ok" and out.sql:
+            res = out.result
+            peek = ""
+            if res is not None and res.columns:
+                rows = "; ".join(", ".join(map(str, r)) for r in res.rows[:3])
+                peek = f"{len(res.rows)} rows, columns {', '.join(res.columns)}; first rows: {rows}"
+            self.history.append((out.question, out.sql, peek))
+            del self.history[:-config.MEMORY_TURNS]
+        return out
+
+    def _start(self, question: str) -> Answer | Pending:
         first = self._attempt(question)
         if (config.CANDIDATES <= 1 or isinstance(first, Pending) or first.status != "ok"
                 or first.kind != "read" or first.result is None):
@@ -329,18 +353,27 @@ class SQLAgent:
         for _ in range(config.CANDIDATES - 1):
             out = self._attempt(question)
             while isinstance(out, Pending):  # extra attempts never write
-                out = self.resume(False)
+                out = self._run(Command(resume=False))
             answers.append(out)
         return self._vote(answers)
 
     def _attempt(self, question: str) -> Answer | Pending:
         self._question = question
         self._thread = {"configurable": {"thread_id": str(uuid.uuid4())}}
-        content = question
+        parts = []
+        if self.memory and self.history:
+            # v6: compact memory of earlier turns (question, SQL, result peek), so follow-ups
+            # like "now split that by country" work without replaying whole transcripts.
+            turns = "\n".join(f"Q: {q}\nSQL: {sql}" + (f"\nResult: {peek}" if peek else "")
+                              for q, sql, peek in self.history)
+            parts.append(f"Earlier in this conversation (most recent last):\n{turns}")
         if self.index:
-            self._context_tables = self.index.select(question)
+            # Search with the previous question too, so follow-ups retrieve the same tables.
+            query = f"{self.history[-1][0]} {question}" if self.memory and self.history else question
+            self._context_tables = self.index.select(query)
             tables = "\n".join(self.index.lines[t] for t in self._context_tables)
-            content = f"Relevant tables:\n{tables}\n\nQuestion: {question}"
+            parts.append(f"Relevant tables:\n{tables}")
+        content = "\n\n".join(parts + [f"Question: {question}"]) if parts else question
         return self._run({"messages": [HumanMessage(content=content)], "question": question})
 
     @staticmethod
@@ -365,9 +398,6 @@ class SQLAgent:
         winner.cache_read_tokens = sum(a.cache_read_tokens for a in answers)
         winner.candidates_agreed = f"{len(best)}/{len(answers)}"
         return winner
-
-    def resume(self, approved: bool) -> Answer | Pending:
-        return self._run(Command(resume=approved))
 
     def _run(self, inp) -> Answer | Pending:
         try:
