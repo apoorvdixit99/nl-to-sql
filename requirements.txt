@@ -1,0 +1,8 @@
+langchain-anthropic>=1.7
+langchain-community>=0.4
+sqlalchemy>=2.0
+sqlglot>=30.0
+rich
+python-dotenv
+langgraph>=1.2
+pytest
