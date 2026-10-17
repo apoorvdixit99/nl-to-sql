@@ -1,6 +1,7 @@
 from nl_to_sql.chain import Answer
 from nl_to_sql.db import QueryResult
-from nl_to_sql.evaluation import grade, results_match
+from nl_to_sql.compare import results_match
+from nl_to_sql.evaluation import grade
 
 
 def R(cols, rows):

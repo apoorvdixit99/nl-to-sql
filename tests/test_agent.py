@@ -186,3 +186,72 @@ def test_search_tables_tool(enterprise):
     llm = ScriptedLLM(search, call("SELECT 1"))
     SQLAgent(enterprise, llm=llm).start("Northwind shop: anything")
     assert '"shop_Order Details"(' in llm.seen[1][-1].content or "shop_Order Details(" in llm.seen[1][-1].content
+
+
+def test_unparseable_select_runs_readonly_without_approval(db):
+    median = ("SELECT AVG(Total) FROM (SELECT Total FROM Invoice ORDER BY Total "
+              "LIMIT 2 - (SELECT COUNT(*) FROM Invoice) % 2 OFFSET ((SELECT COUNT(*) FROM Invoice) - 1) / 2)")
+    assert classify(median) == "unknown"
+    a = SQLAgent(db, llm=ScriptedLLM(call(median))).start("median invoice total")
+    assert a.status == "ok" and a.kind == "read" and a.result.rows == [(3.96,)]
+
+
+def test_unknown_non_query_still_needs_approval(db):
+    out = SQLAgent(db, llm=ScriptedLLM(call("PRAGMA user_version = 7"))).start("set version")
+    assert isinstance(out, Pending) and out.kind == "unknown"
+
+
+# ---- v5: answer check and self-consistency -----------------------------------
+
+def test_red_flag_triggers_review_and_fix(db, monkeypatch):
+    monkeypatch.setattr(config, "VERIFY", "flags")
+    yoy = ("WITH y AS (SELECT strftime('%Y', InvoiceDate) AS yr, SUM(Total) AS rev FROM Invoice GROUP BY yr) "
+           "SELECT yr, ROUND(100.0 * (rev - LAG(rev) OVER (ORDER BY yr)) / LAG(rev) OVER (ORDER BY yr), 1) FROM y")
+    fixed = f"SELECT * FROM ({yoy}) WHERE yr > '2009'"
+    llm = ScriptedLLM(call(yoy), AIMessage(content="ISSUE: the first year has a NULL change; drop it."), call(fixed))
+    a = SQLAgent(db, llm=llm).start("year-over-year change for each year after the first")
+    assert a.status == "ok" and a.llm_calls == 3 and len(a.result.rows) == 4
+    assert "NULL" in a.review
+    assert "reviewer" in llm.seen[2][-1].content  # the fix request reached the agent
+
+
+def test_clean_result_skips_review(db, monkeypatch):
+    monkeypatch.setattr(config, "VERIFY", "flags")
+    a = SQLAgent(db, llm=ScriptedLLM(call("SELECT COUNT(*) FROM Track"))).start("how many tracks")
+    assert a.llm_calls == 1 and a.review == ""
+
+
+def test_review_ok_keeps_answer(db, monkeypatch):
+    monkeypatch.setattr(config, "VERIFY", "always")
+    llm = ScriptedLLM(call("SELECT COUNT(*) FROM Track"), AIMessage(content="OK"))
+    a = SQLAgent(db, llm=llm).start("how many tracks")
+    assert a.status == "ok" and a.llm_calls == 2 and a.review == "OK" and a.result.rows == [(3503,)]
+
+
+def test_self_consistency_majority_vote(db, monkeypatch):
+    monkeypatch.setattr(config, "CANDIDATES", 3)
+    monkeypatch.setattr(config, "VERIFY", "off")
+    llm = ScriptedLLM(call("SELECT COUNT(*) FROM Album"),
+                      call("SELECT COUNT(*) FROM Track"),
+                      call("SELECT COUNT(TrackId) AS n FROM Track"))
+    a = SQLAgent(db, llm=llm).start("how many tracks")
+    assert a.result.rows == [(3503,)] and a.candidates_agreed == "2/3" and a.llm_calls == 3
+
+
+def test_red_flags_rules():
+    from nl_to_sql.db import QueryResult
+    from nl_to_sql.verify import red_flags
+    R = lambda cols, rows: QueryResult(columns=cols, rows=rows)
+    assert red_flags("which artist has the most albums", R(["a", "n"], [("x", 3), ("y", 2)]))
+    assert not red_flags("which artist has the most albums", R(["a", "n"], [("x", 3), ("y", 3)]))  # tie
+    assert not red_flags("revenue for each year", R(["y", "r"], [("2009", 1.0), ("2010", 2.0)]))
+    assert red_flags("x", R(["a"], [(None,)]))
+    assert red_flags("percentage of sales by genre", R(["g", "p"], [("Rock", 135.0)]))
+
+
+def test_prose_answer_after_exploratory_query_keeps_rows(db):
+    llm = ScriptedLLM(call("SELECT COUNT(*) FROM Track", final=False),
+                      AIMessage(content="There are 3503 tracks."))
+    a = SQLAgent(db, llm=llm).start("how many tracks")
+    assert a.status == "ok" and a.result.rows == [(3503,)] and a.sql == "SELECT COUNT(*) FROM Track"
+    assert a.note == "There are 3503 tracks."

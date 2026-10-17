@@ -43,6 +43,8 @@ class Answer:
     output_tokens: int = 0
     cache_read_tokens: int = 0     # part of input_tokens served from the prompt cache (~0.1x price)
     context_tables: list[str] = field(default_factory=list)  # v4: tables retrieved for the prompt
+    review: str = ""               # v5: answer-check verdict, if it ran ("OK" or the issue)
+    candidates_agreed: str = ""    # v5: self-consistency agreement, e.g. "3/3"
 
 
 _SQL_BLOCK = re.compile(r"```sql\s*(.*?)```", re.DOTALL | re.IGNORECASE)

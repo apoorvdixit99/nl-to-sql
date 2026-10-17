@@ -16,6 +16,10 @@ class QueryResult:
     truncated: bool = False    # True if more than MAX_RESULT_ROWS were available
 
 
+class ReadOnlyViolation(Exception):
+    """A statement tried to write inside a read-only connection."""
+
+
 class Database:
     """Thin wrapper over a SQLAlchemy engine: schema text for prompts, profiling, execution."""
 
@@ -167,9 +171,34 @@ class Database:
                         prof.setdefault(table, {})[c["name"]] = hint
         return prof
 
+    def execute_readonly(self, sql: str) -> QueryResult:
+        """Run `sql` where the database itself refuses writes (defense in depth on top of
+        the sqlglot classifier). Raises ReadOnlyViolation if the statement tried to write."""
+        try:
+            if self.dialect == "sqlite" and self._sqlite_path():
+                if not hasattr(self, "_ro_engine"):
+                    uri = f"sqlite:///file:{self._sqlite_path().as_posix()}?mode=ro&uri=true"
+                    self._ro_engine = create_engine(uri)
+                return self._run(self._ro_engine, sql, commit=False)
+            if self.dialect in ("postgresql", "mysql", "mariadb"):
+                return self._run(self.engine, sql, commit=False, setup="SET TRANSACTION READ ONLY")
+            # Other dialects: no read-only switch wired up yet; rely on classifier + rollback.
+            return self._run(self.engine, sql, commit=False)
+        except Exception as e:
+            msg = str(e).lower()
+            if any(s in msg for s in ("readonly", "read-only", "read only")):
+                raise ReadOnlyViolation(str(e)) from e
+            raise
+
     def execute(self, sql: str, commit: bool) -> QueryResult:
         """Run `sql`. Reads are always rolled back, so nothing persists unless commit=True."""
-        with self.engine.connect() as conn:
+        return self._run(self.engine, sql, commit)
+
+    @staticmethod
+    def _run(engine, sql: str, commit: bool, setup: str | None = None) -> QueryResult:
+        with engine.connect() as conn:
+            if setup:
+                conn.execute(text(setup))
             cursor = conn.execute(text(sql))
             result = QueryResult(rowcount=cursor.rowcount)
             if cursor.returns_rows:

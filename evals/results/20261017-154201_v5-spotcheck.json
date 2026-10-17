@@ -1,0 +1,77 @@
+{
+  "label": "v5-spotcheck",
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "features": {
+    "value_hints": true,
+    "few_shot": false,
+    "schema_mode": "auto",
+    "verify": "flags",
+    "plan": false,
+    "candidates": 1
+  },
+  "accuracy": "3/3",
+  "by_level": {
+    "medium": "1/1",
+    "hard": "2/2"
+  },
+  "llm_calls": 4,
+  "input_tokens": 7175,
+  "cache_read_tokens": 6420,
+  "output_tokens": 1799,
+  "est_cost_usd": 0.001,
+  "failed": [],
+  "rows": [
+    {
+      "id": "ch07",
+      "level": "medium",
+      "pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(pt.TrackId) AS TrackCount FROM Playlist p JOIN PlaylistTrack pt ON pt.PlaylistId = p.PlaylistId WHERE p.Name = 'Grunge';",
+      "note": "",
+      "error": null,
+      "context_tables": [],
+      "cache_read_tokens": 2140,
+      "review": "",
+      "candidates_agreed": "",
+      "llm_calls": 1,
+      "input_tokens": 2232,
+      "output_tokens": 150,
+      "seconds": 1.8
+    },
+    {
+      "id": "ch17",
+      "level": "hard",
+      "pass": true,
+      "status": "ok",
+      "sql": "WITH y AS (\n  SELECT CAST(strftime('%Y', InvoiceDate) AS INTEGER) AS yr,\n         SUM(Total) AS rev\n  FROM Invoice\n  GROUP BY yr\n),\nl AS (\n  SELECT yr, rev, LAG(rev) OVER (ORDER BY yr) AS prev_rev\n  FROM y\n)\nSELECT yr AS year,\n       ROUND(rev, 2) AS revenue,\n       ROUND((rev - prev_rev) * 100.0 / prev_rev, 1) AS yoy_pct_change\nFROM l\nWHERE prev_rev IS NOT NULL\nORDER BY yr;",
+      "note": "I'm assuming revenue means the sum of `Invoice.Total` per calendar year, and that the first year in the data is the base year, so it is excluded from the output.",
+      "error": null,
+      "context_tables": [],
+      "cache_read_tokens": 2140,
+      "review": "",
+      "candidates_agreed": "",
+      "llm_calls": 1,
+      "input_tokens": 2253,
+      "output_tokens": 742,
+      "seconds": 3.3
+    },
+    {
+      "id": "ch19",
+      "level": "hard",
+      "pass": true,
+      "status": "ok",
+      "sql": "WITH counts AS (\n  SELECT p.Name AS PlaylistName, COUNT(DISTINCT al.ArtistId) AS ArtistCount\n  FROM Playlist p\n  JOIN PlaylistTrack pt ON pt.PlaylistId = p.PlaylistId\n  JOIN Track t ON t.TrackId = pt.TrackId\n  JOIN Album al ON al.AlbumId = t.AlbumId\n  GROUP BY p.PlaylistId, p.Name\n)\nSELECT PlaylistName, ArtistCount\nFROM counts\nWHERE ArtistCount = (SELECT MAX(ArtistCount) FROM counts);",
+      "note": "I'm assuming each track's artist comes from its album, and that ties should all be returned.",
+      "error": null,
+      "context_tables": [],
+      "cache_read_tokens": 2140,
+      "review": "OK",
+      "candidates_agreed": "",
+      "llm_calls": 2,
+      "input_tokens": 2690,
+      "output_tokens": 907,
+      "seconds": 4.7
+    }
+  ]
+}

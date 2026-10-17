@@ -23,9 +23,11 @@ from langgraph.types import Command, interrupt
 
 from . import config
 from .chain import Answer
-from .db import Database, QueryResult
+from .compare import results_match
+from .db import Database, QueryResult, ReadOnlyViolation
 from .retrieval import TableIndex
 from .safety import classify, to_sqlglot_dialect
+from .verify import parse_review, red_flags, review_prompt
 
 LEGEND = ("columns, PK = primary key, -> = foreign key, {...} = the column's full set of values, "
           "[a .. b] = value range")
@@ -36,13 +38,17 @@ FULL_SCHEMA_SECTION = """Tables ({legend}):
 RETRIEVE_SCHEMA_SECTION = """This database has {n} tables. The ones most relevant to each question are listed with their columns ({legend}) in the user's message. If a table you need isn't listed, find it with search_tables or describe_tables.
 All table names: {names}"""
 
+PLAN_RULE = (
+    "\n- For multi-step questions (comparisons between periods, rankings within groups, ratios of "
+    "totals), first write a 1-3 line plan of the steps, then write the query as CTEs that follow it.")
+
 SYSTEM_TEMPLATE = """You answer questions about a {dialect} database by running SQL with your tools.
 
 {schema_section}
 {examples}
 How to work:
 - Usually you can answer with ONE run_query call with final=true. The rows are shown straight to the user, so don't summarize them afterwards.
-- Before that call, write at most one short sentence stating any assumption.
+- Before that call, write at most one short sentence stating any assumption.{plan_rule}
 - Use the listed values and ranges exactly (spelling, type, date format). Only explore with describe_tables, search_tables or run_query final=false when the schema leaves you unsure.
 - If a query fails, or returns no rows when you expected some, investigate and retry.
 - Return exactly what was asked. "Which/who has the most X" means only the top row (all tied rows if there is a tie), not a ranking. Respect wording like "after the first", "rounded to 1 decimal", or the columns requested.
@@ -97,6 +103,13 @@ class AgentState(TypedDict, total=False):
     kind: str | None
     note: str
     result: dict | None       # QueryResult as a plain dict (checkpointer-friendly)
+    question: str             # the user's question (without retrieved schema)
+    verified: bool            # v5: the answer check has run
+    review: str               # v5: reviewer verdict ("OK" or the issue it raised)
+    review_in: int            # v5: reviewer token usage (not part of `messages`)
+    review_out: int
+    last_sql: str              # last successful non-empty read (fallback answer)
+    last_result: dict
 
 
 @dataclass
@@ -135,6 +148,7 @@ class SQLAgent:
             max_tokens=config.MAX_TOKENS,
             output_config={"effort": config.EFFORT},
         )
+        self.reviewer = llm  # v5 answer check: same model, no tools
         full_schema = db.compact_schema(hints=config.VALUE_HINTS)
         mode = config.SCHEMA_MODE
         if mode == "auto":
@@ -156,6 +170,7 @@ class SQLAgent:
             "text": SYSTEM_TEMPLATE.format(
                 dialect=db.dialect,
                 schema_section=section,
+                plan_rule=PLAN_RULE if config.PLAN else "",
                 examples=_examples_block(db.name) if config.FEW_SHOT else "",
             ),
             "cache_control": {"type": "ephemeral"},
@@ -171,9 +186,11 @@ class SQLAgent:
         g = StateGraph(AgentState)
         g.add_node("agent", self._agent_node)
         g.add_node("tools", self._tools_node)
+        g.add_node("verify", self._verify_node)
         g.add_edge(START, "agent")
         g.add_conditional_edges("agent", self._after_agent, ["tools", END])
-        g.add_conditional_edges("tools", self._after_tools, ["agent", END])
+        g.add_conditional_edges("tools", self._after_tools, ["agent", "verify", END])
+        g.add_conditional_edges("verify", lambda s: END if s.get("status") else "agent", ["agent", END])
         return g.compile(checkpointer=InMemorySaver())
 
     def _agent_node(self, state: AgentState) -> dict:
@@ -185,11 +202,45 @@ class SQLAgent:
         last = state["messages"][-1]
         return "tools" if isinstance(last, AIMessage) and last.tool_calls else END
 
-    @staticmethod
-    def _after_tools(state: AgentState) -> str:
+    def _after_tools(self, state: AgentState) -> str:
+        if state.get("status") == "ok" and self._should_verify(state):
+            return "verify"
         if state.get("status") or state.get("llm_calls", 0) >= config.MAX_LLM_CALLS:
             return END
         return "agent"
+
+    # ---- v5: answer check ----------------------------------------------------
+
+    @staticmethod
+    def _should_verify(state: AgentState) -> bool:
+        if (config.VERIFY == "off" or state.get("verified") or state.get("kind") != "read"
+                or state.get("llm_calls", 0) >= config.MAX_LLM_CALLS):
+            return False
+        if config.VERIFY == "always":
+            return True
+        return bool(red_flags(state.get("question", ""), QueryResult(**state["result"])))
+
+    def _verify_node(self, state: AgentState) -> dict:
+        res = QueryResult(**state["result"])
+        question = state.get("question", "")
+        prompt = review_prompt(question, state["sql"], res, red_flags(question, res))
+        reply = self.reviewer.invoke([HumanMessage(content=prompt)])
+        usage = reply.usage_metadata or {}
+        issue = parse_review(reply.text)
+        update = {
+            "verified": True,
+            "llm_calls": state.get("llm_calls", 0) + 1,
+            "review": issue or "OK",
+            "review_in": state.get("review_in", 0) + usage.get("input_tokens", 0),
+            "review_out": state.get("review_out", 0) + usage.get("output_tokens", 0),
+        }
+        if issue and update["llm_calls"] < config.MAX_LLM_CALLS:
+            update["status"] = None  # reopen: the agent gets one chance to fix it
+            update["messages"] = [HumanMessage(content=(
+                f"A reviewer checked your final result and found a problem: {issue}\n"
+                "If you agree, fix it and call run_query again with final=true. "
+                "If the result is actually correct, reply with one short sentence saying why."))]
+        return update
 
     def _tools_node(self, state: AgentState) -> dict:
         # Note: on resume after interrupt(), LangGraph re-runs this node from the top,
@@ -222,6 +273,17 @@ class SQLAgent:
 
         sql, final = args.get("sql", ""), bool(args.get("final"))
         kind = classify(sql, to_sqlglot_dialect(self.db.dialect))
+        res = None
+        # Reads run on a read-only connection, so a misclassified write still can't change data.
+        # Query-shaped SQL the parser couldn't classify (e.g. LIMIT <expr>) gets the same
+        # treatment: if the database accepts it read-only, it is a read.
+        if kind == "read" or (kind == "unknown" and sql.lstrip().lower().startswith(("select", "with"))):
+            try:
+                res, kind = self.db.execute_readonly(sql), "read"
+            except ReadOnlyViolation:
+                kind, res = "write", None  # it tried to write: fall through to the write policy
+            except Exception as e:
+                return f"Error: {e}\nFix the query and try again."
         policy = self.permissions.get(kind, "confirm")
         if policy == "deny":
             update.update(status="denied", sql=sql, kind=kind)
@@ -237,11 +299,15 @@ class SQLAgent:
             update.update(status="declined", sql=sql, kind=kind)
             return "The user declined to run this query."
 
-        try:
-            res = self.db.execute(sql, commit=kind != "read")
-        except Exception as e:
-            return f"Error: {e}\nFix the query and try again."
+        if res is None:
+            try:
+                res = self.db.execute(sql, commit=True)
+            except Exception as e:
+                return f"Error: {e}\nFix the query and try again."
 
+        if kind == "read" and res.rows:
+            # Fallback answer if the model ends with prose instead of a final=true call.
+            update.update(last_sql=sql, last_result=res.__dict__.copy())
         if final or kind != "read":
             update.update(sql=sql, kind=kind, note=ai.text.strip(), result=res.__dict__.copy())
             # Empty final read: give the model one look before ending, in case it's a bad filter.
@@ -254,6 +320,20 @@ class SQLAgent:
     # ---- public API (UI-agnostic) -----------------------------------------
 
     def start(self, question: str) -> Answer | Pending:
+        first = self._attempt(question)
+        if (config.CANDIDATES <= 1 or isinstance(first, Pending) or first.status != "ok"
+                or first.kind != "read" or first.result is None):
+            return first
+        # v5 self-consistency (opt-in): more independent attempts, then vote on the results.
+        answers = [first]
+        for _ in range(config.CANDIDATES - 1):
+            out = self._attempt(question)
+            while isinstance(out, Pending):  # extra attempts never write
+                out = self.resume(False)
+            answers.append(out)
+        return self._vote(answers)
+
+    def _attempt(self, question: str) -> Answer | Pending:
         self._question = question
         self._thread = {"configurable": {"thread_id": str(uuid.uuid4())}}
         content = question
@@ -261,7 +341,30 @@ class SQLAgent:
             self._context_tables = self.index.select(question)
             tables = "\n".join(self.index.lines[t] for t in self._context_tables)
             content = f"Relevant tables:\n{tables}\n\nQuestion: {question}"
-        return self._run({"messages": [HumanMessage(content=content)]})
+        return self._run({"messages": [HumanMessage(content=content)], "question": question})
+
+    @staticmethod
+    def _vote(answers: list[Answer]) -> Answer:
+        """Group attempts whose results match (same data, any presentation); the largest group wins."""
+        groups: list[list[Answer]] = []
+        for a in answers:
+            if a.status != "ok" or a.result is None:
+                continue
+            for g in groups:
+                ref = g[0].result
+                if results_match(ref, a.result) or results_match(a.result, ref):
+                    g.append(a)
+                    break
+            else:
+                groups.append([a])
+        best = max(groups, key=len)  # ties go to the earliest group
+        winner = best[0]
+        winner.llm_calls = sum(a.llm_calls for a in answers)
+        winner.input_tokens = sum(a.input_tokens for a in answers)
+        winner.output_tokens = sum(a.output_tokens for a in answers)
+        winner.cache_read_tokens = sum(a.cache_read_tokens for a in answers)
+        winner.candidates_agreed = f"{len(best)}/{len(answers)}"
+        return winner
 
     def resume(self, approved: bool) -> Answer | Pending:
         return self._run(Command(resume=approved))
@@ -284,13 +387,19 @@ class SQLAgent:
             kind=state.get("kind"),
             note=state.get("note", ""),
             llm_calls=state.get("llm_calls", 0),
-            input_tokens=sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ais),
-            output_tokens=sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ais),
+            input_tokens=sum((m.usage_metadata or {}).get("input_tokens", 0) for m in ais)
+            + state.get("review_in", 0),
+            output_tokens=sum((m.usage_metadata or {}).get("output_tokens", 0) for m in ais)
+            + state.get("review_out", 0),
+            review=state.get("review", ""),
             cache_read_tokens=sum(((m.usage_metadata or {}).get("input_token_details") or {}).get("cache_read", 0) for m in ais),
             context_tables=list(self._context_tables),
         )
         if state.get("result") is not None:
             a.result = QueryResult(**state["result"])
+        elif state.get("last_result") is not None and not state.get("status"):
+            # The model answered in prose after an exploratory query: show that query's rows.
+            a.result, a.sql, a.kind = QueryResult(**state["last_result"]), state["last_sql"], "read"
 
         last = state["messages"][-1]
         status = state.get("status")

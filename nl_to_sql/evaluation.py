@@ -8,9 +8,6 @@ Matching is deliberately lenient about presentation and strict about data:
 """
 import json
 import time
-from collections import Counter
-from decimal import Decimal
-from itertools import combinations
 from pathlib import Path
 from typing import Callable
 
@@ -18,6 +15,7 @@ import sqlglot
 from sqlglot import exp
 
 from . import config
+from .compare import results_match
 from .db import Database, QueryResult
 
 DATASET = config.ROOT / "evals" / "dataset.json"
@@ -52,51 +50,6 @@ def to_enterprise(item: dict) -> dict:
         out["gold_sql"] = rename_tables(item["gold_sql"], prefix)
     out["alt_gold_sql"] = [rename_tables(s, prefix) for s in item.get("alt_gold_sql", [])]
     return out
-
-
-# ---- result matching -------------------------------------------------------
-
-def _norm(v):
-    if isinstance(v, Decimal):
-        v = float(v)
-    if isinstance(v, float):
-        v = round(v, 2)
-        return int(v) if v.is_integer() else v
-    if isinstance(v, str):
-        s = v.strip()
-        try:  # numbers stored as text, e.g. "3.0"
-            return _norm(float(s)) if s.replace(".", "", 1).lstrip("-").isdigit() else s
-        except ValueError:
-            return s
-    return v
-
-
-def _columns(rows: list[tuple], n: int) -> list[list]:
-    return [[_norm(r[i]) for r in rows] for i in range(n)]
-
-
-def results_match(gold: QueryResult, pred: QueryResult) -> bool:
-    if len(gold.rows) != len(pred.rows):
-        return False
-    if not gold.rows:
-        return True
-    gcols = _columns(gold.rows, len(gold.columns))
-    pcols = _columns(pred.rows, len(pred.columns))
-    # Derived candidates: "First Last" from pairs of text columns.
-    for a, b in combinations(range(len(pcols)), 2):
-        if all(isinstance(x, str) for x in pcols[a] + pcols[b]):
-            pcols.append([f"{x} {y}" for x, y in zip(pcols[a], pcols[b])])
-            pcols.append([f"{y} {x}" for x, y in zip(pcols[a], pcols[b])])
-
-    gold_rows = Counter(zip(*gcols))
-    candidates = [[j for j, pc in enumerate(pcols) if Counter(pc) == Counter(gc)] for gc in gcols]
-
-    def assign(i: int, chosen: list[int]) -> bool:
-        if i == len(gcols):
-            return Counter(zip(*(pcols[j] for j in chosen))) == gold_rows
-        return any(assign(i + 1, chosen + [j]) for j in candidates[i] if j not in chosen)
-
-    return assign(0, [])
 
 
 def grade_against(golds: list[QueryResult], pred: QueryResult) -> bool:
@@ -139,6 +92,7 @@ def run(items: list[dict], make_runner: Callable[[Database], object], label: str
             "id": item["id"], "level": item["level"], "pass": passed,
             "status": answer.status, "sql": answer.sql, "note": answer.note, "error": answer.error,
             "context_tables": answer.context_tables, "cache_read_tokens": answer.cache_read_tokens,
+            "review": answer.review, "candidates_agreed": answer.candidates_agreed,
             "llm_calls": answer.llm_calls, "input_tokens": answer.input_tokens,
             "output_tokens": answer.output_tokens, "seconds": round(secs, 1),
         })
@@ -162,7 +116,8 @@ def summarize(rows: list[dict], label: str) -> dict:
     summary = {
         "label": label, "model": config.MODEL, "effort": config.EFFORT,
         "features": {"value_hints": config.VALUE_HINTS, "few_shot": config.FEW_SHOT,
-                     "schema_mode": config.SCHEMA_MODE},
+                     "schema_mode": config.SCHEMA_MODE, "verify": config.VERIFY,
+                     "plan": config.PLAN, "candidates": config.CANDIDATES},
         "accuracy": f"{sum(r['pass'] for r in rows)}/{len(rows)}",
         "by_level": by_level,
         "llm_calls": sum(r["llm_calls"] for r in rows),

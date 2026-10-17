@@ -60,9 +60,18 @@ def render(answer: Answer, sql_already_shown: bool = False) -> None:
         else:
             console.print(f"[green]Done.[/] {res.rowcount} row(s) affected.")
 
+    extras = []
+    if answer.review:
+        extras.append(f"answer check: {answer.review}")
+    if answer.candidates_agreed:
+        extras.append(f"attempts agreeing: {answer.candidates_agreed}")
+    if answer.context_tables:
+        extras.append(f"{len(answer.context_tables)} tables retrieved")
     if answer.llm_calls:
-        console.print(f"[dim]{answer.llm_calls} model call(s) · "
-                      f"{answer.input_tokens:,} in / {answer.output_tokens:,} out tokens[/]")
+        extras.append(f"{answer.llm_calls} model call(s) · "
+                      f"{answer.input_tokens:,} in / {answer.output_tokens:,} out tokens")
+    if extras:
+        console.print("[dim]" + " · ".join(extras) + "[/]")
 
 
 def ask_agent(agent: SQLAgent, question: str) -> None:

@@ -35,6 +35,14 @@ FULL_SCHEMA_MAX_CHARS = 20000   # ~5k tokens
 RETRIEVE_TOP_K = 6              # BM25 hits before FK expansion
 RETRIEVE_MAX_TABLES = 14        # after FK expansion
 
+# --- Advanced accuracy (v5) ---
+# Answer check: "flags" = an LLM reviews the result only when free red-flag rules fire
+# (NULLs, several rows for a single-answer question, duplicate rows, odd percentages);
+# "always" = review every read result; "off" = never.
+VERIFY = "flags"
+PLAN = False             # ask for a short plan before multi-step queries (output tokens only)
+CANDIDATES = 1           # self-consistency: >1 runs N independent attempts and votes (N x cost)
+
 # --- Databases ---
 # Any SQLAlchemy URL works here, e.g. "postgresql+psycopg://user:pw@host/db".
 DATABASES = {

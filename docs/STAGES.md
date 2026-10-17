@@ -69,3 +69,37 @@ Takeaway: Haiku 5.5 now saturates this set, so later stages need a harder benchm
 Remaining misses:
 - `ch17`: Haiku keeps the first year's NULL row despite "after the first". This is a target for v5's answer check.
 - `nw09`: an ambiguous wording, now accepted both ways.
+
+## v5: advanced accuracy (`nl_to_sql/verify.py`, `compare.py`)
+- **10 harder questions** (53 in total), for example:
+  - second-ranked genre per year (`RANK` within groups),
+  - median computed without a `MEDIAN` function,
+  - year-over-year deltas per product or employee,
+  - per-order value thresholds,
+  - late-delivery percentage per shipper,
+  - running totals.
+- **Read-only execution.** Reads, and `SELECT`/`WITH` statements sqlglot can't classify, run on a read-only connection (SQLite `mode=ro`, `SET TRANSACTION READ ONLY` on Postgres/MySQL):
+  - A misclassified write can't change data.
+  - This fixed a false approval prompt for a median query using `LIMIT <expression>`.
+  - Statements that aren't queries (PRAGMA, ATTACH) still ask for approval.
+- **Answer check** (`VERIFY="flags"`, the default):
+  - Free rules check every result: NULLs, several rows for a single-answer question (ties allowed), duplicate rows, percentages outside 0–100.
+  - An LLM review runs only when a rule fires, and gets one chance to send the agent back to fix the query. `always` and `off` are available.
+- **Plan rule** (`PLAN`, off): a 1–3 line plan before multi-step queries. Costs only output tokens.
+- **Self-consistency** (`CANDIDATES=N`, off): N independent attempts, with results grouped by the eval's comparison logic; the largest group wins.
+- **Fallback answer:** if the agent ends with prose after an exploratory query, the rows of its last successful read are returned. This fixed a real failure on `ch07`.
+- `results_match` moved to `compare.py`, so the grader and the voting share it.
+
+| Run (53 questions) | Accuracy | Calls | Cost |
+|---|---|---|---|
+| verify off (= v4 behaviour) | 52 | 54 | $0.011 |
+| **verify=flags (default)** | 52* | 56 | $0.011 |
+| PLAN=true | 53 | 55 | $0.011 |
+| CANDIDATES=3 (27 hard only) | 27/27 | 82 | $0.021 |
+
+\* Its one miss (`ch07`, prose instead of a final query) is fixed by the fallback above. A re-run of `ch07`, `ch17` and `ch19` passed all three.
+
+Findings:
+- The answer check fired on 1 of 53 questions (a legitimate tie, judged OK), so it adds almost no cost.
+- Self-consistency attempts agreed 3/3 on 25 of 27 hard questions. There's too little diversity to vote on (Haiku 5.5 doesn't accept temperature changes), so it isn't worth 2–3× the cost here.
+- At this difficulty Haiku 5.5 is at the eval's ceiling, so differences between these features are within noise.
