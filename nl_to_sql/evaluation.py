@@ -8,7 +8,6 @@ Matching is deliberately lenient about presentation and strict about data:
 """
 import json
 import time
-from pathlib import Path
 from typing import Callable
 
 import sqlglot
@@ -93,6 +92,7 @@ def run(items: list[dict], make_runner: Callable[[Database], object], label: str
             "status": answer.status, "sql": answer.sql, "note": answer.note, "error": answer.error,
             "context_tables": answer.context_tables, "cache_read_tokens": answer.cache_read_tokens,
             "review": answer.review, "candidates_agreed": answer.candidates_agreed,
+            "agents": answer.agents, "security": answer.security,
             "llm_calls": answer.llm_calls, "input_tokens": answer.input_tokens,
             "output_tokens": answer.output_tokens, "seconds": round(secs, 1),
         })

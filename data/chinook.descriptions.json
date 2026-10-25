@@ -1,0 +1,81 @@
+{
+ "source": "llm",
+ "schema_hash": "19635e2e6ace100e",
+ "tables": {
+  "Album": {
+   "description": "One row per music album, linking each album title to its single performing artist; used as the grouping level between artists and tracks.",
+   "columns": {}
+  },
+  "Artist": {
+   "description": "One row per recording artist or band, providing the canonical artist name referenced by albums.",
+   "columns": {}
+  },
+  "Customer": {
+   "description": "One row per customer account holding contact and location details, with the assigned support representative; used for sales and customer analysis.",
+   "columns": {
+    "Company": "Company name for business customers; 'None' (null) for individuals",
+    "State": "State or province code (e.g. 'SP', 'QC', 'AB'); 'None' (null) where not applicable",
+    "PostalCode": "Postal or ZIP code in the customer's local format",
+    "Fax": "Fax number; often null",
+    "SupportRepId": "EmployeeId of the employee assigned as this customer's support representative"
+   }
+  },
+  "Employee": {
+   "description": "One row per staff member with job title, reporting line, and contact details; used for org and sales-rep analysis.",
+   "columns": {
+    "Title": "Job title (e.g. 'General Manager', 'Sales Support Agent')",
+    "ReportsTo": "EmployeeId of this employee's manager; null for the top of the hierarchy",
+    "BirthDate": "Date of birth, format YYYY-MM-DD HH:MM:SS (time always 00:00:00)",
+    "HireDate": "Date the employee was hired, format YYYY-MM-DD HH:MM:SS (time always 00:00:00)",
+    "State": "State or province code; null where not applicable",
+    "Fax": "Fax number; often null"
+   }
+  },
+  "Genre": {
+   "description": "One row per music genre (e.g. Rock, Jazz, Metal), used to categorize tracks.",
+   "columns": {}
+  },
+  "Invoice": {
+   "description": "One row per sales invoice (order header) for a customer, storing billing address and the invoice total; used for revenue and sales analysis.",
+   "columns": {
+    "InvoiceDate": "Invoice timestamp, format YYYY-MM-DD HH:MM:SS (time always 00:00:00)",
+    "BillingAddress": "Billing address on the invoice, copied from the customer at the time of purchase; may differ from the customer's current address",
+    "BillingState": "Billing state or province code; null where not applicable",
+    "BillingPostalCode": "Billing postal or ZIP code",
+    "Total": "Invoice total in the billing currency (sum of its line items)"
+   }
+  },
+  "InvoiceLine": {
+   "description": "One row per track purchased within an invoice, giving the unit price and quantity; the detail level for sales analysis.",
+   "columns": {
+    "UnitPrice": "Price charged per unit of the track at time of sale",
+    "Quantity": "Number of units of the track purchased on this line"
+   }
+  },
+  "MediaType": {
+   "description": "One row per media format (e.g. MPEG audio, protected AAC, MPEG-4 video) that a track can be stored in.",
+   "columns": {
+    "Name": "Media format name; 'Protected' indicates DRM-restricted files"
+   }
+  },
+  "Playlist": {
+   "description": "One row per named playlist, a user-curated collection of tracks.",
+   "columns": {}
+  },
+  "PlaylistTrack": {
+   "description": "Junction table, one row per track included in a playlist; links Playlist and Track in a many-to-many relationship.",
+   "columns": {}
+  },
+  "Track": {
+   "description": "One row per individual track (song or video), with its album, media type, genre, length, file size and unit price; the core catalog table.",
+   "columns": {
+    "AlbumId": "Album this track belongs to; null if the track is not part of an album",
+    "GenreId": "Genre of the track; null if unassigned",
+    "Composer": "Composer credit(s), comma-separated; null if unknown",
+    "Milliseconds": "Track length in milliseconds",
+    "Bytes": "Size of the media file in bytes; null if unknown",
+    "UnitPrice": "Price per unit of the track in the billing currency"
+   }
+  }
+ }
+}

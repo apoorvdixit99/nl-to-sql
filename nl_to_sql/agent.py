@@ -25,10 +25,9 @@ from langgraph.types import Command, interrupt
 from . import config, descriptions
 from .chain import Answer
 from .compare import results_match
-from .db import Database, QueryResult, ReadOnlyViolation
+from .db import Database, QueryResult
 from .retrieval import TableIndex
-from .safety import classify, to_sqlglot_dialect
-from .security import SQLGuard
+from .executor import Executor, format_rows
 from .verify import parse_review, red_flags, review_prompt
 
 LEGEND = ("columns, PK = primary key, -> = foreign key, {...} = the column's full set of values, "
@@ -123,17 +122,6 @@ class Pending:
     kind: str
 
 
-def _format_rows(res: QueryResult) -> str:
-    if not res.columns:
-        return f"OK, {res.rowcount} row(s) affected."
-    shown = res.rows[: config.TOOL_RESULT_ROWS]
-    lines = ["\t".join(res.columns)] + ["\t".join(map(str, r)) for r in shown]
-    extra = len(res.rows) - len(shown)
-    if extra > 0 or res.truncated:
-        lines.append(f"... ({extra}{'+' if res.truncated else ''} more rows not shown)")
-    return f"{len(res.rows)}{'+' if res.truncated else ''} row(s):\n" + "\n".join(lines)
-
-
 def _examples_block(db_name: str) -> str:
     path = config.ROOT / "nl_to_sql" / "examples" / f"{db_name}.json"
     if not path.exists():
@@ -156,7 +144,7 @@ class SQLAgent:
             output_config={"effort": config.EFFORT},
         )
         self.reviewer = llm  # v5 answer check: same model, no tools
-        self.guard = SQLGuard(db.columns(), to_sqlglot_dialect(db.dialect))  # v7
+        self.executor = Executor(db, self.permissions)  # v7: security layer + execution
         if not db.descriptions:  # v7: table/column descriptions (cached; generated once if allowed)
             db.descriptions = descriptions.ensure(db, llm)
         full_schema = db.compact_schema(hints=config.VALUE_HINTS)
@@ -282,45 +270,23 @@ class SQLAgent:
             return f"Error: unknown tool {name}"
 
         sql, final = args.get("sql", ""), bool(args.get("final"))
-        verdict = self.guard.check(sql)  # v7 deterministic security layer, before anything runs
-        if not verdict.allowed:
-            update["security"] = update.get("security", []) + [f"blocked: {verdict.message()}"]
-            return (f"Blocked by the security policy, query not run: {verdict.message()}.\n"
-                    "Rewrite the query to avoid this.")
-        if verdict.warnings:
-            update["security"] = update.get("security", []) + [f"warning: {w}" for w in verdict.warnings]
-        kind = verdict.kind
-        res = None
-        # Reads run on a read-only connection, so a misclassified write still can't change data.
-        # Query-shaped SQL the parser couldn't classify (e.g. LIMIT <expr>) gets the same
-        # treatment: if the database accepts it read-only, it is a read.
-        if kind == "read" or (kind == "unknown" and sql.lstrip().lower().startswith(("select", "with"))):
-            try:
-                res, kind = self.db.execute_readonly(sql), "read"
-            except ReadOnlyViolation:
-                kind, res = "write", None  # it tried to write: fall through to the write policy
-            except Exception as e:
-                return f"Error: {e}\nFix the query and try again."
-        policy = self.permissions.get(kind, "confirm")
-        if policy == "deny":
+        out = self.executor.run(sql)  # security layer -> read-only run / write policy (executor.py)
+        if out.security:
+            update["security"] = update.get("security", []) + out.security
+        kind = out.kind
+        if out.status in ("blocked", "error"):
+            return out.message
+        if out.status == "denied":
             update.update(status="denied", sql=sql, kind=kind)
-            return f"Blocked: {kind} queries are not allowed."
-        if kind != "read":
-            # Validate before asking the user, so they never approve a query that can't run.
-            # EXPLAIN plans without executing on SQLite, Postgres and MySQL.
-            try:
-                self.db.execute(f"EXPLAIN {sql}", commit=False)
-            except Exception as e:
-                return f"Error (query not run): {e}\nFix the query and try again."
-        if policy == "confirm" and not interrupt({"sql": sql, "kind": kind}):
-            update.update(status="declined", sql=sql, kind=kind)
-            return "The user declined to run this query."
-
-        if res is None:
-            try:
-                res = self.db.execute(sql, commit=True)
-            except Exception as e:
-                return f"Error: {e}\nFix the query and try again."
+            return out.message
+        if out.status == "needs_approval":
+            if not interrupt({"sql": sql, "kind": kind}):
+                update.update(status="declined", sql=sql, kind=kind)
+                return "The user declined to run this query."
+            out = self.executor.run_write(sql, kind)
+            if out.status != "ok":
+                return out.message
+        res = out.result
 
         if kind == "read" and res.rows:
             # Fallback answer if the model ends with prose instead of a final=true call.
@@ -332,7 +298,7 @@ class SQLAgent:
                 return ("0 rows. If that's unexpected, check the data (value formats, ranges) "
                         "and retry. If it's correct, reply with one short sentence.")
             update["status"] = "ok"
-        return _format_rows(res)
+        return format_rows(res)
 
     # ---- public API (UI-agnostic) -----------------------------------------
 

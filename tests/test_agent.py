@@ -307,7 +307,7 @@ def test_postgres_reads_use_read_only_transaction(db, monkeypatch):
     from nl_to_sql.db import QueryResult, ReadOnlyViolation
     calls = []
 
-    def fake_run(engine, sql, commit, setup=None):
+    def fake_run(engine, sql, commit, setup=None, params=None):
         calls.append((sql, setup))
         if sql.startswith("DELETE"):
             raise RuntimeError("cannot execute DELETE in a read-only transaction")

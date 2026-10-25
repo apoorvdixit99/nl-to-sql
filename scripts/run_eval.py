@@ -15,6 +15,7 @@ from nl_to_sql import config  # noqa: E402
 from nl_to_sql.agent import Pending, SQLAgent  # noqa: E402
 from nl_to_sql.chain import NLToSQL  # noqa: E402
 from nl_to_sql.db import Database  # noqa: E402
+from nl_to_sql.multi_agent import MultiAgentSQL  # noqa: E402
 from nl_to_sql.evaluation import gold_results, load_dataset, run  # noqa: E402
 
 
@@ -43,6 +44,7 @@ def _agent_without_hints(db):
 
 
 RUNNERS = {
+    "multi": lambda db: AgentAdapter(MultiAgentSQL(db)),
     "v1": lambda db: ChainAdapter(NLToSQL(db)),
     "v2": _agent_without_hints,
     "v3": lambda db: AgentAdapter(SQLAgent(db)),

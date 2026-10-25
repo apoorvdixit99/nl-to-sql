@@ -192,7 +192,7 @@ class Database:
                         prof.setdefault(table, {})[c["name"]] = hint
         return prof
 
-    def execute_readonly(self, sql: str) -> QueryResult:
+    def execute_readonly(self, sql: str, params: dict | None = None) -> QueryResult:
         """Run `sql` where the database itself refuses writes (defense in depth on top of
         the sqlglot classifier). Raises ReadOnlyViolation if the statement tried to write."""
         try:
@@ -200,11 +200,12 @@ class Database:
                 if not hasattr(self, "_ro_engine"):
                     uri = f"sqlite:///file:{self._sqlite_path().as_posix()}?mode=ro&uri=true"
                     self._ro_engine = create_engine(uri)
-                return self._run(self._ro_engine, sql, commit=False)
+                return self._run(self._ro_engine, sql, commit=False, params=params)
             if self.dialect in ("postgresql", "mysql", "mariadb"):
-                return self._run(self.engine, sql, commit=False, setup="SET TRANSACTION READ ONLY")
+                return self._run(self.engine, sql, commit=False, setup="SET TRANSACTION READ ONLY",
+                                 params=params)
             # Other dialects: no read-only switch wired up yet; rely on classifier + rollback.
-            return self._run(self.engine, sql, commit=False)
+            return self._run(self.engine, sql, commit=False, params=params)
         except Exception as e:
             msg = str(e).lower()
             if any(s in msg for s in ("readonly", "read-only", "read only")):
@@ -216,13 +217,13 @@ class Database:
         return self._run(self.engine, sql, commit)
 
     @staticmethod
-    def _run(engine, sql: str, commit: bool, setup: str | None = None) -> QueryResult:
+    def _run(engine, sql: str, commit: bool, setup: str | None = None, params: dict | None = None) -> QueryResult:
         with engine.connect() as conn:
             if setup:
                 conn.execute(text(setup))  # e.g. SET TRANSACTION READ ONLY: must come first
             clear = _apply_timeout(conn, engine.dialect.name)
             try:
-                cursor = conn.execute(text(sql))
+                cursor = conn.execute(text(sql), params or {})
             except Exception as e:
                 if "interrupted" in str(e).lower():
                     raise TimeoutError(f"query timed out after {config.QUERY_TIMEOUT_S}s") from e

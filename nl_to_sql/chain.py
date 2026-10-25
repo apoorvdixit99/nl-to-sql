@@ -47,6 +47,8 @@ class Answer:
     review: str = ""               # v5: answer-check verdict, if it ran ("OK" or the issue)
     candidates_agreed: str = ""    # v5: self-consistency agreement, e.g. "3/3"
     security: list[str] = field(default_factory=list)  # v7: security-layer blocks/warnings
+    agents: dict = field(default_factory=dict)         # v7 multi: {agent: {calls, in, out}}
+    brief: str = ""                                     # v7 multi: the schema analyst's brief
 
 
 _SQL_BLOCK = re.compile(r"```sql\s*(.*?)```", re.DOTALL | re.IGNORECASE)

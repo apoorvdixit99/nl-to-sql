@@ -9,6 +9,7 @@ from rich.table import Table
 
 from nl_to_sql import config
 from nl_to_sql.agent import Pending, SQLAgent
+from nl_to_sql.multi_agent import make_agent
 from nl_to_sql.chain import Answer, NLToSQL
 from nl_to_sql.db import Database
 
@@ -69,6 +70,8 @@ def render(answer: Answer, sql_already_shown: bool = False) -> None:
         extras.append(f"attempts agreeing: {answer.candidates_agreed}")
     if answer.context_tables:
         extras.append(f"{len(answer.context_tables)} tables retrieved")
+    if answer.agents:
+        extras.append("agents: " + ", ".join(f"{k} {v['calls']}" for k, v in answer.agents.items()))
     if answer.llm_calls:
         extras.append(f"{answer.llm_calls} model call(s) · "
                       f"{answer.input_tokens:,} in / {answer.output_tokens:,} out tokens")
@@ -103,17 +106,20 @@ def ask_chain(chain: NLToSQL, question: str) -> None:
 
 def make(db_name: str, v1: bool):
     db = Database(db_name)
-    return NLToSQL(db) if v1 else SQLAgent(db, memory=True)
+    return NLToSQL(db) if v1 else make_agent(db, memory=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Natural language to SQL")
     parser.add_argument("--db", default=config.DEFAULT_DB, choices=list(config.DATABASES))
     parser.add_argument("--v1", action="store_true", help="use the v1 single-shot chain")
+    parser.add_argument("--arch", choices=["single", "multi"], default=config.ARCHITECTURE,
+                        help="single agent or the three-agent team")
     args = parser.parse_args()
+    config.ARCHITECTURE = args.arch
 
     runner = make(args.db, args.v1)
-    mode = "v1 chain" if args.v1 else "v2 agent"
+    mode = "v1 chain" if args.v1 else f"{args.arch} agent"
     console.print(f"[bold]nl-to-sql[/] · {mode} · db=[cyan]{args.db}[/] · model=[cyan]{config.MODEL}[/]")
     console.print(HELP + "\n")
 

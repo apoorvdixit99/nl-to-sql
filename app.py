@@ -7,7 +7,8 @@ import pandas as pd
 import streamlit as st
 
 from nl_to_sql import config
-from nl_to_sql.agent import Pending, SQLAgent
+from nl_to_sql.agent import Pending
+from nl_to_sql.multi_agent import make_agent
 from nl_to_sql.chain import Answer
 from nl_to_sql.db import Database
 
@@ -16,14 +17,16 @@ st.set_page_config(page_title="nl-to-sql", page_icon="🗄️", layout="wide")
 
 # ---- state -----------------------------------------------------------------
 
-def new_agent(db_name: str) -> SQLAgent:
-    return SQLAgent(Database(db_name), memory=st.session_state.get("memory", True))
+def new_agent(db_name: str):
+    config.ARCHITECTURE = st.session_state.get("arch", config.ARCHITECTURE)
+    return make_agent(Database(db_name), memory=st.session_state.get("memory", True))
 
 
 def init_state() -> None:
     ss = st.session_state
     ss.setdefault("db_name", config.DEFAULT_DB)
     ss.setdefault("memory", True)
+    ss.setdefault("arch", config.ARCHITECTURE)
     ss.setdefault("messages", [])      # [{"role": "user", "text": ...} | {"role": "assistant", "answer": Answer}]
     ss.setdefault("pending", None)     # Pending while waiting for approval
     ss.setdefault("usage", {"calls": 0, "in": 0, "cached": 0, "out": 0})
@@ -68,6 +71,9 @@ def render_answer(a: Answer) -> None:
         getattr(st, kind)(text)
     elif a.status in ("error", "gave_up"):
         st.error(a.error or "Something went wrong.")
+    if a.brief:
+        with st.expander("Schema analyst's brief"):
+            st.text(a.brief)
     if a.sql:
         with st.expander(f"SQL ({a.kind})", expanded=a.result is None):
             st.code(a.sql, language="sql")
@@ -89,6 +95,8 @@ def render_answer(a: Answer) -> None:
         bits.append(f"attempts agreeing: {a.candidates_agreed}")
     if a.context_tables:
         bits.append(f"{len(a.context_tables)} tables retrieved")
+    if a.agents:
+        bits.append("agents: " + ", ".join(f"{k} {v['calls']}" for k, v in a.agents.items()))
     if a.llm_calls:
         bits.append(f"{a.llm_calls} model call(s) · {a.input_tokens:,} in / {a.output_tokens:,} out tokens")
     if bits:
@@ -103,6 +111,12 @@ def sidebar() -> None:
         choice = st.selectbox("Database", names, index=names.index(ss.db_name))
         if choice != ss.db_name:
             ss.db_name = choice
+            reset_conversation()
+            st.rerun()
+        arch = st.radio("Architecture", ["single", "multi"], index=["single", "multi"].index(ss.arch),
+                        horizontal=True, help="multi = schema analyst + SQL writer + validator")
+        if arch != ss.arch:
+            ss.arch = arch
             reset_conversation()
             st.rerun()
         memory = st.toggle("Remember earlier questions", value=ss.memory,

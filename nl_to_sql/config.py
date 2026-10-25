@@ -94,3 +94,11 @@ EMBED_MODEL = "BAAI/bge-small-en-v1.5"   # local ONNX model via fastembed (~65 M
 RRF_K = 60
 BM25_WEIGHT = 1.0               # RRF weight of the BM25 ranking
 VECTOR_WEIGHT = 0.5             # RRF weight of each vector ranking (table docs, column docs)
+
+# --- Architecture (v7) ---
+ARCHITECTURE = os.getenv("NL2SQL_ARCHITECTURE", "single")  # "single" (SQLAgent) | "multi" (3 agents)
+SCHEMA_AGENT = "llm"            # multi: "llm" = schema analyst agent; "retrieval" = no model call, brief from retrieval
+SCHEMA_AGENT_MAX_CALLS = 3      # analyst exploration budget before it must hand over
+MULTI_VALIDATOR = "always"      # multi: "always" | "flags" (only on red flags / security warnings) | "off"
+MULTI_VALIDATION_ROUNDS = 1     # how many times the validator may send a final query back
+MULTI_MAX_LLM_CALLS = 10        # all three agents together, per question

@@ -80,7 +80,7 @@ def fake(rng: random.Random, typ: str, col: str):
 
 def copy_source(conn: sqlite3.Connection, prefix: str, path: Path) -> int:
     """Recreate every table of `path` as <prefix>_<name>, keeping PK/FK constraints and rows."""
-    conn.execute(f"ATTACH DATABASE ? AS src", (str(path),))
+    conn.execute("ATTACH DATABASE ? AS src", (str(path),))
     tables = conn.execute(
         "SELECT name, sql FROM src.sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     ).fetchall()
