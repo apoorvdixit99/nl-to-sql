@@ -22,7 +22,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.types import Command, interrupt
 
-from . import config
+from . import config, descriptions
 from .chain import Answer
 from .compare import results_match
 from .db import Database, QueryResult, ReadOnlyViolation
@@ -157,6 +157,8 @@ class SQLAgent:
         )
         self.reviewer = llm  # v5 answer check: same model, no tools
         self.guard = SQLGuard(db.columns(), to_sqlglot_dialect(db.dialect))  # v7
+        if not db.descriptions:  # v7: table/column descriptions (cached; generated once if allowed)
+            db.descriptions = descriptions.ensure(db, llm)
         full_schema = db.compact_schema(hints=config.VALUE_HINTS)
         mode = config.SCHEMA_MODE
         if mode == "auto":

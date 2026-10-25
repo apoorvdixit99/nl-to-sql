@@ -1,0 +1,2062 @@
+{
+ "source": "llm",
+ "schema_hash": "f91eeb265aa8cd47",
+ "tables": {
+  "airline_accounts": {
+   "description": "One row per airline account, recording its code, name, status and opening date, linked to the request that created it.",
+   "columns": {
+    "account_code": "Short identifier code for the account, not a formatted account number",
+    "status": "Account lifecycle state (e.g. pending, active, closed, archived)",
+    "requests_id": "Foreign key to airline_requests.id"
+   }
+  },
+  "airline_budgets": {
+   "description": "One row per budget allocation for a fiscal period, with its owner, status and the account it belongs to.",
+   "columns": {
+    "fiscal_year": "Fiscal year identifier stored as an integer; the value is not a calendar year in the sample data",
+    "amount": "Budget amount in currency units",
+    "status": "Budget state (e.g. active, closed, archived)",
+    "accounts_id": "Foreign key to airline_accounts.id"
+   }
+  },
+  "airline_locations": {
+   "description": "One row per physical site, with its city, country, capacity and the vendor it is associated with.",
+   "columns": {
+    "capacity": "Maximum capacity of the site as an integer count",
+    "vendors_id": "Foreign key to airline_vendors.id"
+   }
+  },
+  "airline_requests": {
+   "description": "One row per request raised against a budget, recording who asked, its priority and its status.",
+   "columns": {
+    "priority": "Request priority level as text",
+    "status": "Request state (e.g. open, pending, active, archived)",
+    "budgets_id": "Foreign key to airline_budgets.id"
+   }
+  },
+  "airline_schedules": {
+   "description": "One row per scheduled time window, with a label, start and end timestamps and a status.",
+   "columns": {
+    "starts_at": "Start timestamp in YYYY-MM-DD HH:MM:SS format",
+    "ends_at": "End timestamp in YYYY-MM-DD HH:MM:SS format; may be earlier than starts_at in the data"
+   }
+  },
+  "airline_vendors": {
+   "description": "One row per vendor company, with its country, numeric rating and the date it became a vendor.",
+   "columns": {
+    "rating": "Numeric vendor rating as an integer; scale is not documented and sample values range widely",
+    "since": "Date the vendor relationship began"
+   }
+  },
+  "clinic_accounts": {
+   "description": "One row per clinic account, recording its code, name, status and opening date.",
+   "columns": {
+    "account_code": "Short identifier code for the account, not a formatted account number",
+    "status": "Account lifecycle state (e.g. active, closed, archived)"
+   }
+  },
+  "clinic_assets": {
+   "description": "One row per clinic asset, with its tag, category, purchase cost and acquisition date, linked to the contract it falls under.",
+   "columns": {
+    "asset_tag": "Asset identifier tag",
+    "purchase_cost": "Purchase cost in currency units",
+    "contracts_id": "Foreign key to clinic_contracts.id"
+   }
+  },
+  "clinic_assignments": {
+   "description": "One row per assignment of a person to a role, tied to a payment record, with start and end dates.",
+   "columns": {
+    "role": "Role held by the assignee during the assignment",
+    "end_date": "Date the assignment ends; may precede start_date in the data",
+    "payments_id": "Foreign key to clinic_payments.id"
+   }
+  },
+  "clinic_audits": {
+   "description": "One row per audit of the clinic, recording the auditor, a numeric score, the audit date and its status.",
+   "columns": {
+    "score": "Numeric audit score as an integer; scale is not documented",
+    "status": "Audit state (e.g. open, pending, closed, archived)"
+   }
+  },
+  "clinic_contracts": {
+   "description": "One row per vendor contract, with its value, signing date and expiry date.",
+   "columns": {
+    "vendor": "Vendor identifier for the contract counterparty",
+    "value": "Total contract value in currency units",
+    "expires_on": "Contract expiry date; may precede signed_on in the data"
+   }
+  },
+  "clinic_incidents": {
+   "description": "One row per reported clinic incident, with a summary, severity, report date and resolution state.",
+   "columns": {
+    "summary": "Short identifier-style summary text of the incident",
+    "severity": "Incident severity or state label as text (e.g. open, active, archived, pending)",
+    "resolved": "Resolution state of the incident (e.g. open, active, closed)"
+   }
+  },
+  "clinic_payments": {
+   "description": "One row per payment made against a clinic asset, recording the payee, amount, date and payment method.",
+   "columns": {
+    "amount": "Payment amount in currency units",
+    "method": "Payment method identifier as text",
+    "assets_id": "Foreign key to clinic_assets.id"
+   }
+  },
+  "clinic_requests": {
+   "description": "One row per request raised against a clinic asset, recording who asked, its priority and its status.",
+   "columns": {
+    "priority": "Request priority level as text (e.g. open, pending, closed); not a numeric rank",
+    "status": "Request state (e.g. active, pending, closed)",
+    "assets_id": "Foreign key to clinic_assets.id"
+   }
+  },
+  "compliance_accounts": {
+   "description": "One row per compliance account, recording its code, name, status and opening date.",
+   "columns": {
+    "account_code": "Short identifier code for the account, not a formatted account number",
+    "status": "Account state (e.g. open, active, closed, archived)"
+   }
+  },
+  "compliance_budgets": {
+   "description": "One row per budget allocation for a fiscal period, with its owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year identifier stored as an integer; the value is not a calendar year in the sample data",
+    "amount": "Budget amount in currency units",
+    "status": "Budget state (e.g. pending, active)"
+   }
+  },
+  "compliance_documents": {
+   "description": "One row per compliance document, with its title, document type, creation date and author.",
+   "columns": {
+    "title": "Identifier-style title of the document",
+    "doc_type": "Document type code as text"
+   }
+  },
+  "compliance_incidents": {
+   "description": "One row per reported compliance incident, with a summary, severity, report date and resolution state.",
+   "columns": {
+    "severity": "Incident severity or state label as text (e.g. open, active)",
+    "resolved": "Resolution state of the incident (e.g. open, active, closed)"
+   }
+  },
+  "compliance_notes": {
+   "description": "One row per note written against a compliance request, with its body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility state of the note (e.g. open, pending, active, archived)",
+    "requests_id": "Foreign key to compliance_requests.id"
+   }
+  },
+  "compliance_requests": {
+   "description": "One row per compliance request, recording who asked, its priority and its status.",
+   "columns": {
+    "priority": "Request priority level as text (e.g. open, closed); not a numeric rank",
+    "status": "Request state (e.g. active, archived, open)"
+   }
+  },
+  "compliance_vendors": {
+   "description": "One row per compliance vendor company, with its country, numeric rating and start date, linked to a compliance account.",
+   "columns": {
+    "rating": "Numeric vendor rating as an integer; scale is not documented",
+    "since": "Date the vendor relationship began",
+    "accounts_id": "Foreign key to compliance_accounts.id"
+   }
+  },
+  "crm_assets": {
+   "description": "One row per CRM asset, with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "asset_tag": "Asset identifier tag",
+    "purchase_cost": "Purchase cost in currency units"
+   }
+  },
+  "crm_audits": {
+   "description": "One row per CRM audit, recording the auditor, a numeric score, the audit date and status, linked to an incident.",
+   "columns": {
+    "score": "Numeric audit score as an integer; scale is not documented",
+    "status": "Audit state (e.g. closed, pending, open)",
+    "incidents_id": "Foreign key to crm_incidents.id"
+   }
+  },
+  "crm_customer_feedback": {
+   "description": "One row per piece of customer feedback, with the customer name, a numeric rating, a comment and the date given.",
+   "columns": {
+    "rating": "Numeric feedback rating as an integer; scale is not documented",
+    "comment": "Comment text as recorded; sample values are identifier-style codes"
+   }
+  },
+  "crm_documents": {
+   "description": "One row per CRM document, with its title, type, creation date and author, linked to an audit.",
+   "columns": {
+    "doc_type": "Document type code as text",
+    "audits_id": "Foreign key to crm_audits.id"
+   }
+  },
+  "crm_incidents": {
+   "description": "One row per CRM incident, with a summary, severity, report date and resolution state, linked to an audit.",
+   "columns": {
+    "severity": "Incident severity or state label as text (e.g. pending, archived)",
+    "resolved": "Resolution state of the incident (e.g. closed, archived, active)",
+    "audits_id": "Foreign key to crm_audits.id"
+   }
+  },
+  "crm_metrics": {
+   "description": "One row per measured metric value, linked to a customer feedback record.",
+   "columns": {
+    "metric_name": "Name of the metric as an identifier-style code",
+    "value": "Numeric measured value; unit is given in the unit column",
+    "unit": "Unit of measure for value, stored as text code",
+    "customer_feedback_id": "Foreign key to crm_customer_feedback.id"
+   }
+  },
+  "crm_requests": {
+   "description": "One row per CRM request, recording who asked, its priority and its status.",
+   "columns": {
+    "priority": "Request priority level as text (e.g. open, active, closed); not a numeric rank",
+    "status": "Request state (e.g. active, closed)"
+   }
+  },
+  "energy_budgets": {
+   "description": "One row per budget allocation for a fiscal period, linked to an energy incident.",
+   "columns": {
+    "fiscal_year": "Fiscal year identifier stored as an integer; the value is not a calendar year in the sample data",
+    "amount": "Budget amount in currency units",
+    "status": "Budget state (e.g. active, open, archived)",
+    "incidents_id": "Foreign key to energy_incidents.id"
+   }
+  },
+  "energy_incidents": {
+   "description": "One row per reported energy incident, linked to a budget, with severity, report date and resolution state.",
+   "columns": {
+    "severity": "Incident severity or state label as text (e.g. open, archived)",
+    "resolved": "Resolution state of the incident (e.g. active, open, closed)",
+    "budgets_id": "Foreign key to energy_budgets.id"
+   }
+  },
+  "energy_locations": {
+   "description": "One row per energy site, with its city, country and capacity.",
+   "columns": {
+    "capacity": "Maximum capacity of the site as an integer count"
+   }
+  },
+  "energy_metrics": {
+   "description": "One row per measured energy metric value, with the metric name, date measured and unit.",
+   "columns": {
+    "value": "Numeric measured value; unit is given in the unit column",
+    "unit": "Unit of measure for value, stored as text code"
+   }
+  },
+  "energy_notes": {
+   "description": "One row per note, with its body, author, date written and visibility.",
+   "columns": {
+    "visibility": "Visibility state of the note (e.g. archived, active, closed)"
+   }
+  },
+  "energy_schedules": {
+   "description": "One row per scheduled time window, with a label, start and end timestamps and status.",
+   "columns": {
+    "starts_at": "Start timestamp in YYYY-MM-DD HH:MM:SS format",
+    "ends_at": "End timestamp in YYYY-MM-DD HH:MM:SS format; may be earlier than starts_at in the data",
+    "status": "Schedule state (e.g. archived, open, active)"
+   }
+  },
+  "events_assets": {
+   "description": "One row per events asset, with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "asset_tag": "Asset identifier tag",
+    "purchase_cost": "Purchase cost in currency units"
+   }
+  },
+  "events_budgets": {
+   "description": "One row per budget allocation for a fiscal period, with its owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year identifier stored as an integer; the value is not a calendar year in the sample data",
+    "amount": "Budget amount in currency units",
+    "status": "Budget state (e.g. archived, closed, active)"
+   }
+  },
+  "events_documents": {
+   "description": "One row per events document, with its title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type code as text"
+   }
+  },
+  "events_incidents": {
+   "description": "One row per reported events incident, with a summary, severity, report date and resolution state.",
+   "columns": {
+    "severity": "Incident severity or state label as text (e.g. closed, active, pending, open)",
+    "resolved": "Resolution state of the incident (e.g. active, open, closed)"
+   }
+  },
+  "events_locations": {
+   "description": "One row per events venue or site, with its city, country and capacity, linked to an events request.",
+   "columns": {
+    "capacity": "Maximum capacity of the venue as an integer count",
+    "requests_id": "Foreign key to events_requests.id"
+   }
+  },
+  "events_playlist_requests": {
+   "description": "One row per song request submitted for an event, with the event name, song title and request date.",
+   "columns": {
+    "event_name": "Name or identifier of the event the song was requested for",
+    "song_title": "Title of the requested song"
+   }
+  },
+  "events_requests": {
+   "description": "One row per events request, recording who asked, its priority and status, linked to a location.",
+   "columns": {
+    "priority": "Request priority level as text (e.g. open, archived, closed); not a numeric rank",
+    "status": "Request state (e.g. archived, open)",
+    "locations_id": "Foreign key to events_locations.id"
+   }
+  },
+  "events_vendors": {
+   "description": "One row per events vendor company, with its country, numeric rating and start date.",
+   "columns": {
+    "rating": "Numeric vendor rating as an integer; scale is not documented",
+    "since": "Date the vendor relationship began"
+   }
+  },
+  "facilities_accounts": {
+   "description": "One row per facilities account, recording its code, name, status and open date.",
+   "columns": {
+    "account_code": "Internal account reference code (free-text identifier, not a standard code set)",
+    "status": "Account state as free text (e.g. open, closed, archived)",
+    "opened_on": "Date the account was opened (YYYY-MM-DD)"
+   }
+  },
+  "facilities_assignments": {
+   "description": "One row per assignment of an assignee to a role over a date range in the facilities domain.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned (free-text code)",
+    "role": "Role assigned (free-text code, no fixed list)",
+    "start_date": "Assignment start date (YYYY-MM-DD)",
+    "end_date": "Assignment end date (YYYY-MM-DD); sample rows show values earlier than start_date, so do not assume ordering"
+   }
+  },
+  "facilities_documents": {
+   "description": "One row per facilities document, with its title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type as free-text code",
+    "created_on": "Date the document was created (YYYY-MM-DD)",
+    "author": "Identifier of the document author (free-text code)"
+   }
+  },
+  "facilities_incidents": {
+   "description": "One row per reported facilities incident, with a summary, severity, report date and resolution state.",
+   "columns": {
+    "severity": "Incident severity as free text; sample values overlap with status-like terms, so validate before filtering",
+    "reported_on": "Date the incident was reported (YYYY-MM-DD)",
+    "resolved": "Resolution state as free text (e.g. open, closed, pending, archived)"
+   }
+  },
+  "facilities_locations": {
+   "description": "One row per facilities site, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Site capacity as an integer; unit is not specified in the schema"
+   }
+  },
+  "facilities_notes": {
+   "description": "One row per note in the facilities domain, with its body text, author, date and visibility.",
+   "columns": {
+    "body": "Note text (in sample data, appears as coded identifiers rather than prose)",
+    "visibility": "Visibility state as free text (e.g. active, pending, archived)"
+   }
+  },
+  "facilities_requests": {
+   "description": "One row per facilities request, with requester, priority, request date and status.",
+   "columns": {
+    "requested_by": "Identifier of the requester (free-text code)",
+    "priority": "Priority as free text; sample values include status-like terms, so validate before filtering",
+    "requested_on": "Date the request was made (YYYY-MM-DD)"
+   }
+  },
+  "facilities_schedules": {
+   "description": "One row per scheduled time window in the facilities domain, optionally linked to an incident.",
+   "columns": {
+    "starts_at": "Window start timestamp (YYYY-MM-DD HH:MM:SS)",
+    "ends_at": "Window end timestamp (YYYY-MM-DD HH:MM:SS); sample rows show values earlier than starts_at",
+    "incidents_id": "Foreign key to facilities_incidents.id; the incident this schedule relates to"
+   }
+  },
+  "finance_accounts": {
+   "description": "One row per finance account, recording its code, name, status and open date.",
+   "columns": {
+    "account_code": "Internal account reference code (free-text identifier)",
+    "status": "Account state as free text (e.g. open, pending, closed)",
+    "opened_on": "Date the account was opened (YYYY-MM-DD)"
+   }
+  },
+  "finance_assets": {
+   "description": "One row per finance asset, with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "asset_tag": "Asset identifier tag (free-text code)",
+    "purchase_cost": "Cost paid to acquire the asset, in currency units (currency not specified)",
+    "acquired_on": "Date the asset was acquired (YYYY-MM-DD)",
+    "metrics_id": "Foreign key to finance_metrics.id; a related metric for this asset"
+   }
+  },
+  "finance_budgets": {
+   "description": "One row per budget allocation, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer code; sample values are not calendar years, so confirm the encoding",
+    "amount": "Budget amount in currency units (currency not specified)",
+    "owner": "Identifier of the budget owner (free-text code)"
+   }
+  },
+  "finance_incidents": {
+   "description": "One row per reported finance incident, with a summary, severity, report date and resolution state.",
+   "columns": {
+    "severity": "Incident severity as free text; sample values overlap with status-like terms, so validate before filtering",
+    "reported_on": "Date the incident was reported (YYYY-MM-DD)",
+    "resolved": "Resolution state as free text (e.g. open, pending, archived)"
+   }
+  },
+  "finance_locations": {
+   "description": "One row per finance site, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Site capacity as an integer; unit is not specified in the schema"
+   }
+  },
+  "finance_metrics": {
+   "description": "One row per measured metric value, linked to a schedule, with the measurement date and unit label.",
+   "columns": {
+    "metric_name": "Name of the metric (free-text code)",
+    "value": "Numeric measurement of the metric; interpret together with the unit column",
+    "unit": "Unit of measure as free text (not a standard unit symbol)",
+    "schedules_id": "Foreign key to finance_schedules.id; the schedule this measurement belongs to"
+   }
+  },
+  "finance_payments": {
+   "description": "One row per payment made to a payee, linked to the vendor it was paid to.",
+   "columns": {
+    "payee": "Identifier of the payee (free-text code)",
+    "amount": "Payment amount in currency units (currency not specified)",
+    "method": "Payment method as free text (no fixed list in sample data)",
+    "vendors_id": "Foreign key to finance_vendors.id; the vendor associated with this payment"
+   }
+  },
+  "finance_revenue_forecasts": {
+   "description": "One row per revenue forecast for a quarter and region, linked to a location.",
+   "columns": {
+    "quarter": "Forecast period as free text (quarter label; exact format not enforced)",
+    "forecast_amount": "Forecast revenue in currency units (currency not specified)",
+    "region": "Region identifier as free text",
+    "locations_id": "Foreign key to finance_locations.id; the location this forecast applies to"
+   }
+  },
+  "finance_schedules": {
+   "description": "One row per scheduled time window in the finance domain.",
+   "columns": {
+    "starts_at": "Window start timestamp (YYYY-MM-DD HH:MM:SS)",
+    "ends_at": "Window end timestamp (YYYY-MM-DD HH:MM:SS); sample rows show values earlier than starts_at"
+   }
+  },
+  "finance_vendors": {
+   "description": "One row per finance vendor, with company name, country, rating and start date of the relationship.",
+   "columns": {
+    "rating": "Vendor rating as an integer; scale and range are not documented (sample values are large)",
+    "since": "Date the vendor relationship began (YYYY-MM-DD)"
+   }
+  },
+  "fleet_accounts": {
+   "description": "One row per fleet account, linked to an optional note.",
+   "columns": {
+    "account_code": "Internal account reference code (free-text identifier)",
+    "status": "Account state as free text (e.g. active, open, closed)",
+    "opened_on": "Date the account was opened (YYYY-MM-DD)",
+    "notes_id": "Foreign key to fleet_notes.id; a note attached to this account"
+   }
+  },
+  "fleet_audits": {
+   "description": "One row per fleet audit, with the auditor, score, audit date and status.",
+   "columns": {
+    "score": "Audit score as an integer; scale and range are not documented",
+    "audited_on": "Date the audit was performed (YYYY-MM-DD)"
+   }
+  },
+  "fleet_contracts": {
+   "description": "One row per fleet contract with a vendor, its value, and signing and expiry dates.",
+   "columns": {
+    "vendor": "Vendor identifier (free-text code)",
+    "value": "Contract value in currency units (currency not specified)",
+    "signed_on": "Date the contract was signed (YYYY-MM-DD)",
+    "expires_on": "Date the contract expires (YYYY-MM-DD); sample rows show values earlier than signed_on"
+   }
+  },
+  "fleet_metrics": {
+   "description": "One row per measured metric value in the fleet domain, with measurement date and unit label.",
+   "columns": {
+    "value": "Numeric measurement of the metric; interpret together with the unit column",
+    "unit": "Unit of measure as free text (not a standard unit symbol)"
+   }
+  },
+  "fleet_notes": {
+   "description": "One row per note in the fleet domain, with its body, author, date and visibility.",
+   "columns": {
+    "body": "Note text (in sample data, appears as coded identifiers rather than prose)",
+    "visibility": "Visibility state as free text (e.g. active, archived, closed)"
+   }
+  },
+  "fleet_requests": {
+   "description": "One row per fleet request, with requester, priority, request date, status and an optional linked note.",
+   "columns": {
+    "priority": "Priority as free text; sample values include status-like terms, so validate before filtering",
+    "notes_id": "Foreign key to fleet_notes.id; a note attached to this request"
+   }
+  },
+  "helpdesk_accounts": {
+   "description": "One row per helpdesk account, with its code, name, status and open date.",
+   "columns": {
+    "account_code": "Internal account reference code (free-text identifier)",
+    "status": "Account state as free text (e.g. active, archived)",
+    "opened_on": "Date the account was opened (YYYY-MM-DD)"
+   }
+  },
+  "helpdesk_assignments": {
+   "description": "One row per assignment of an assignee to a role over a date range, optionally linked to an audit.",
+   "columns": {
+    "start_date": "Assignment start date (YYYY-MM-DD)",
+    "end_date": "Assignment end date (YYYY-MM-DD); sample rows show values earlier than start_date",
+    "audits_id": "Foreign key to helpdesk_audits.id; the audit this assignment is linked to"
+   }
+  },
+  "helpdesk_audits": {
+   "description": "One row per helpdesk audit, linked to the assignment under which it was performed.",
+   "columns": {
+    "score": "Audit score as an integer; scale and range are not documented",
+    "audited_on": "Date the audit was performed (YYYY-MM-DD)",
+    "assignments_id": "Foreign key to helpdesk_assignments.id; the assignment this audit belongs to"
+   }
+  },
+  "helpdesk_budgets": {
+   "description": "One row per helpdesk budget allocation, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer code; sample values are not calendar years, so confirm the encoding",
+    "amount": "Budget amount in currency units (currency not specified)",
+    "owner": "Identifier of the budget owner (free-text code)"
+   }
+  },
+  "helpdesk_contracts": {
+   "description": "One row per helpdesk contract with a vendor, its value, and signing and expiry dates.",
+   "columns": {
+    "vendor": "Vendor identifier (free-text code)",
+    "value": "Contract value in currency units (currency not specified)",
+    "signed_on": "Date the contract was signed (YYYY-MM-DD)",
+    "expires_on": "Date the contract expires (YYYY-MM-DD); sample rows show values earlier than signed_on"
+   }
+  },
+  "helpdesk_documents": {
+   "description": "One row per helpdesk document, with title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type as free-text code",
+    "created_on": "Date the document was created (YYYY-MM-DD)",
+    "author": "Identifier of the document author (free-text code)"
+   }
+  },
+  "helpdesk_locations": {
+   "description": "One row per helpdesk site, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Site capacity as an integer; unit is not specified in the schema"
+   }
+  },
+  "helpdesk_metrics": {
+   "description": "One row per measured metric value in the helpdesk domain, with measurement date and unit label.",
+   "columns": {
+    "value": "Numeric measurement of the metric; interpret together with the unit column",
+    "unit": "Unit of measure as free text (not a standard unit symbol)"
+   }
+  },
+  "helpdesk_notes": {
+   "description": "One row per note in the helpdesk domain, with its body, author, date and visibility.",
+   "columns": {
+    "body": "Note text (in sample data, appears as coded identifiers rather than prose)",
+    "visibility": "Visibility state as free text (e.g. active, archived)"
+   }
+  },
+  "helpdesk_payments": {
+   "description": "One row per payment made to a payee in the helpdesk domain.",
+   "columns": {
+    "payee": "Identifier of the payee (free-text code)",
+    "amount": "Payment amount in currency units (currency not specified)",
+    "method": "Payment method as free text (no fixed list in sample data)"
+   }
+  },
+  "helpdesk_schedules": {
+   "description": "One row per scheduled time window in the helpdesk domain, optionally linked to a note.",
+   "columns": {
+    "starts_at": "Window start timestamp (YYYY-MM-DD HH:MM:SS)",
+    "ends_at": "Window end timestamp (YYYY-MM-DD HH:MM:SS); sample rows show values earlier than starts_at",
+    "notes_id": "Foreign key to helpdesk_notes.id; the note this schedule is linked to"
+   }
+  },
+  "hotel_accounts": {
+   "description": "One row per hotel account, with its code, name, status and open date.",
+   "columns": {
+    "account_code": "Internal account reference code (free-text identifier)",
+    "status": "Account state as free text (e.g. active, archived)",
+    "opened_on": "Date the account was opened (YYYY-MM-DD)"
+   }
+  },
+  "hotel_budgets": {
+   "description": "One row per hotel budget allocation, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer code; sample values are not calendar years, so confirm the encoding",
+    "amount": "Budget amount in currency units (currency not specified)",
+    "owner": "Identifier of the budget owner (free-text code)"
+   }
+  },
+  "hotel_documents": {
+   "description": "One row per hotel document, optionally linked to an incident.",
+   "columns": {
+    "doc_type": "Document type as free-text code",
+    "created_on": "Date the document was created (YYYY-MM-DD)",
+    "author": "Identifier of the document author (free-text code)",
+    "incidents_id": "Foreign key to hotel_incidents.id; the incident this document relates to"
+   }
+  },
+  "hotel_guest_genres": {
+   "description": "One row per guest reference with that guest's preferred genre.",
+   "columns": {
+    "guest_ref": "Guest identifier (free-text code, not a personal name)",
+    "preferred_genre": "Preferred genre as free-text code"
+   }
+  },
+  "hotel_incidents": {
+   "description": "One row per reported hotel incident, optionally linked to a document.",
+   "columns": {
+    "severity": "Incident severity as free text; sample values overlap with status-like terms, so validate before filtering",
+    "reported_on": "Date the incident was reported (YYYY-MM-DD)",
+    "resolved": "Resolution state as free text (e.g. pending, active)",
+    "documents_id": "Foreign key to hotel_documents.id; the document linked to this incident"
+   }
+  },
+  "hotel_metrics": {
+   "description": "One row per measured metric value for a hotel account, with measurement date and unit label.",
+   "columns": {
+    "value": "Numeric measurement of the metric; interpret together with the unit column",
+    "unit": "Unit of measure as free text (not a standard unit symbol)",
+    "accounts_id": "Foreign key to hotel_accounts.id; the account this measurement belongs to"
+   }
+  },
+  "hotel_notes": {
+   "description": "One row per note in the hotel domain, with its body, author, date and visibility.",
+   "columns": {
+    "body": "Note text (in sample data, appears as coded identifiers rather than prose)",
+    "visibility": "Visibility state as free text (e.g. archived, open, closed)"
+   }
+  },
+  "hotel_payments": {
+   "description": "One row per payment made to a payee, optionally linked to a metric.",
+   "columns": {
+    "payee": "Identifier of the payee (free-text code)",
+    "amount": "Payment amount in currency units (currency not specified)",
+    "method": "Payment method as free text (no fixed list in sample data)",
+    "metrics_id": "Foreign key to hotel_metrics.id; the metric associated with this payment"
+   }
+  },
+  "hr_assignments": {
+   "description": "One row per assignment of an assignee to a role over a date range in the HR domain.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned (free-text code)",
+    "role": "Role assigned (free-text code, no fixed list)",
+    "start_date": "Assignment start date (YYYY-MM-DD)",
+    "end_date": "Assignment end date (YYYY-MM-DD); sample rows show values earlier than start_date"
+   }
+  },
+  "hr_budgets": {
+   "description": "One budget line per fiscal year and owner, optionally linked to an employee shift record; used for HR budget tracking.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer; sample values do not look like calendar years, so check the source before treating it as a year",
+    "amount": "Budgeted amount in currency units (unit not stated)",
+    "status": "Budget status label (e.g. archived, pending); allowed values not documented",
+    "employee_shifts_id": "Foreign key to hr_employee_shifts.id"
+   }
+  },
+  "hr_documents": {
+   "description": "One HR document per row, with its title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type code; values are not documented"
+   }
+  },
+  "hr_employee_shifts": {
+   "description": "One employee shift record per row, giving the employee, shift date and hours worked.",
+   "columns": {
+    "hours": "Hours value stored as a real number; sample values are implausibly large for a single shift, so verify the unit"
+   }
+  },
+  "hr_locations": {
+   "description": "One HR site per row, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Maximum occupancy of the site (unit not stated, presumably people or seats)"
+   }
+  },
+  "hr_metrics": {
+   "description": "One measured HR metric value per row, with the date measured and its unit.",
+   "columns": {
+    "value": "Numeric measurement; the unit is given in the unit column",
+    "unit": "Unit of measure stored as a code string; the code list is not documented"
+   }
+  },
+  "hr_notes": {
+   "description": "One note per row with its body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility level (e.g. open, closed, archived); allowed values not documented"
+   }
+  },
+  "hr_requests": {
+   "description": "One HR request per row, with the requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority label; sample values overlap with status-like terms, so the allowed set is unclear",
+    "status": "Request status label; allowed values not documented"
+   }
+  },
+  "hr_vendors": {
+   "description": "One HR vendor per row, with company, country, rating and start date of the relationship.",
+   "columns": {
+    "rating": "Integer vendor rating; scale and range not documented",
+    "since": "Date the vendor relationship started",
+    "requests_id": "Foreign key to hr_requests.id"
+   }
+  },
+  "insurance_assets": {
+   "description": "One insured or tracked asset per row, with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "purchase_cost": "Purchase cost in currency units (currency not stated)"
+   }
+  },
+  "insurance_assignments": {
+   "description": "One assignment of a person to a role over a date range, linked to an insurance metric.",
+   "columns": {
+    "metrics_id": "Foreign key to insurance_metrics.id",
+    "end_date": "Assignment end date; some end dates precede start dates, so validate before use"
+   }
+  },
+  "insurance_audits": {
+   "description": "One audit per row, with the auditor, score, audit date and status.",
+   "columns": {
+    "score": "Integer audit score; scale and range not documented"
+   }
+  },
+  "insurance_budgets": {
+   "description": "One budget line per row for an insurance vendor, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer; values do not look like calendar years",
+    "amount": "Budgeted amount in currency units (unit not stated)",
+    "vendors_id": "Foreign key to insurance_vendors.id"
+   }
+  },
+  "insurance_contracts": {
+   "description": "One contract per row with the vendor, contract value, signing date and expiry date.",
+   "columns": {
+    "value": "Contract value in currency units (currency not stated)",
+    "expires_on": "Contract expiry date; some values precede signed_on, so validate before use"
+   }
+  },
+  "insurance_incidents": {
+   "description": "One insurance incident per row, with its summary, severity, report date and resolution status.",
+   "columns": {
+    "severity": "Severity label; sample values overlap with status-like terms, so the allowed set is unclear",
+    "resolved": "Resolution status label; allowed values not documented"
+   }
+  },
+  "insurance_locations": {
+   "description": "One insurance site per row, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Maximum occupancy of the site (unit not stated)"
+   }
+  },
+  "insurance_metrics": {
+   "description": "One measured insurance metric value per row, linked to the assignment it was recorded against.",
+   "columns": {
+    "value": "Numeric measurement; the unit is given in the unit column",
+    "unit": "Unit of measure stored as a code string; the code list is not documented",
+    "assignments_id": "Foreign key to insurance_assignments.id"
+   }
+  },
+  "insurance_notes": {
+   "description": "One note per row with its body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility or status label; allowed values not documented"
+   }
+  },
+  "insurance_requests": {
+   "description": "One insurance request per row, with the requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority label; sample values overlap with status-like terms, so the allowed set is unclear",
+    "status": "Request status label; allowed values not documented"
+   }
+  },
+  "insurance_schedules": {
+   "description": "One scheduled time window per row, with a label, start and end datetimes, and status.",
+   "columns": {
+    "starts_at": "Start datetime; some end before they start, so validate before use",
+    "ends_at": "End datetime"
+   }
+  },
+  "insurance_vendors": {
+   "description": "One insurance vendor per row, with company, country, rating and relationship start date.",
+   "columns": {
+    "rating": "Integer vendor rating; scale and range not documented",
+    "since": "Date the vendor relationship started"
+   }
+  },
+  "itam_accounts": {
+   "description": "One IT asset management account per row, with its code, name, status and open date.",
+   "columns": {
+    "account_code": "Account identifier code"
+   }
+  },
+  "itam_assets": {
+   "description": "One IT asset per row, with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "purchase_cost": "Purchase cost in currency units (currency not stated)"
+   }
+  },
+  "itam_assignments": {
+   "description": "One assignment of a person to an IT asset in a role over a date range.",
+   "columns": {
+    "assets_id": "Foreign key to itam_assets.id",
+    "end_date": "Assignment end date; some end dates precede start dates, so validate before use"
+   }
+  },
+  "itam_metrics": {
+   "description": "One measured IT asset metric value per row, with the date measured and its unit.",
+   "columns": {
+    "value": "Numeric measurement; the unit is given in the unit column",
+    "unit": "Unit of measure stored as a code string; the code list is not documented"
+   }
+  },
+  "itam_notes": {
+   "description": "One note per row with its body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility level; allowed values not documented"
+   }
+  },
+  "itam_payments": {
+   "description": "One payment per row with the payee, amount, payment date and payment method.",
+   "columns": {
+    "amount": "Payment amount in currency units (currency not stated)",
+    "method": "Payment method stored as a code string; the code list is not documented"
+   }
+  },
+  "ledger_budgets": {
+   "description": "One budget line per row with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer; values do not look like calendar years",
+    "amount": "Budgeted amount in currency units (unit not stated)"
+   }
+  },
+  "ledger_incidents": {
+   "description": "One ledger incident per row, with its summary, severity, report date and resolution status.",
+   "columns": {
+    "severity": "Severity label; sample values overlap with status-like terms, so the allowed set is unclear",
+    "resolved": "Resolution status label; allowed values not documented"
+   }
+  },
+  "ledger_metrics": {
+   "description": "One measured ledger metric value per row, with the date measured and its unit.",
+   "columns": {
+    "value": "Numeric measurement; the unit is given in the unit column",
+    "unit": "Unit of measure stored as a code string; the code list is not documented"
+   }
+  },
+  "ledger_notes": {
+   "description": "One note per row, optionally linked to a ledger incident, with body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility label; allowed values not documented",
+    "incidents_id": "Foreign key to ledger_incidents.id"
+   }
+  },
+  "ledger_requests": {
+   "description": "One ledger request per row with the requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority label; allowed values not documented",
+    "status": "Request status label; allowed values not documented"
+   }
+  },
+  "ledger_schedules": {
+   "description": "One scheduled time window per row, optionally linked to a ledger budget.",
+   "columns": {
+    "starts_at": "Start datetime; some end before they start, so validate before use",
+    "ends_at": "End datetime",
+    "budgets_id": "Foreign key to ledger_budgets.id"
+   }
+  },
+  "ledger_vendors": {
+   "description": "One ledger vendor per row, with company, country, rating and relationship start date.",
+   "columns": {
+    "rating": "Integer vendor rating; scale and range not documented",
+    "since": "Date the vendor relationship started"
+   }
+  },
+  "legal_assignments": {
+   "description": "One assignment of a person to a role over a date range, optionally linked to a legal payment.",
+   "columns": {
+    "payments_id": "Foreign key to legal_payments.id",
+    "end_date": "Assignment end date; some end dates precede start dates, so validate before use"
+   }
+  },
+  "legal_contracts": {
+   "description": "One legal contract per row with the vendor, value, signing date and expiry date.",
+   "columns": {
+    "value": "Contract value in currency units (currency not stated)",
+    "expires_on": "Contract expiry date; some values precede signed_on, so validate before use"
+   }
+  },
+  "legal_documents": {
+   "description": "One legal document per row with its title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type code; values are not documented"
+   }
+  },
+  "legal_notes": {
+   "description": "One note per row, linked to a legal document, with body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility level; allowed values not documented",
+    "documents_id": "Foreign key to legal_documents.id"
+   }
+  },
+  "legal_payments": {
+   "description": "One payment per row, optionally linked to a legal note, with payee, amount, date and method.",
+   "columns": {
+    "amount": "Payment amount in currency units (currency not stated)",
+    "method": "Payment method stored as a code string; the code list is not documented",
+    "notes_id": "Foreign key to legal_notes.id"
+   }
+  },
+  "legal_requests": {
+   "description": "One legal request per row, optionally linked to a legal assignment, with requester, priority, date and status.",
+   "columns": {
+    "priority": "Priority label; allowed values not documented",
+    "status": "Request status label; allowed values not documented",
+    "assignments_id": "Foreign key to legal_assignments.id"
+   }
+  },
+  "legal_vendors": {
+   "description": "One legal vendor per row, optionally linked to a legal request, with company, country, rating and relationship start date.",
+   "columns": {
+    "rating": "Integer vendor rating; scale and range not documented",
+    "since": "Date the vendor relationship started",
+    "requests_id": "Foreign key to legal_requests.id"
+   }
+  },
+  "library_assignments": {
+   "description": "One assignment of a person to a role over a date range, linked to a library request.",
+   "columns": {
+    "requests_id": "Foreign key to library_requests.id",
+    "end_date": "Assignment end date; some end dates precede start dates, so validate before use"
+   }
+  },
+  "library_locations": {
+   "description": "One library site per row, with its name, city, country and capacity.",
+   "columns": {
+    "capacity": "Maximum occupancy of the site (unit not stated)"
+   }
+  },
+  "library_metrics": {
+   "description": "One measured library metric value per row, with the date measured and its unit.",
+   "columns": {
+    "value": "Numeric measurement; the unit is given in the unit column",
+    "unit": "Unit of measure stored as a code string; the code list is not documented"
+   }
+  },
+  "library_notes": {
+   "description": "One note per row with its body, author, date and visibility.",
+   "columns": {
+    "visibility": "Visibility level; allowed values not documented"
+   }
+  },
+  "library_requests": {
+   "description": "One library request per row with the requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority label; allowed values not documented",
+    "status": "Request status label; allowed values not documented"
+   }
+  },
+  "library_vendors": {
+   "description": "One row per external library vendor, recording its company name, country, rating, and the date the relationship began.",
+   "columns": {
+    "rating": "Vendor rating score; scale and direction not documented (sample values range widely, e.g. 72 to 421)",
+    "since": "Date the vendor relationship started"
+   }
+  },
+  "logistics_accounts": {
+   "description": "One row per logistics customer or shipping account, with its code, name, status, and opening date.",
+   "columns": {
+    "account_code": "Internal code identifying the account",
+    "status": "Account state, e.g. open, closed, pending, archived",
+    "opened_on": "Date the account was opened"
+   }
+  },
+  "logistics_assets": {
+   "description": "One row per logistics asset (equipment or vehicle) with its tag, category, cost, and acquisition date, linked to a metrics record.",
+   "columns": {
+    "asset_tag": "Internal identifier label for the asset",
+    "purchase_cost": "Original purchase cost of the asset, in currency units",
+    "acquired_on": "Date the asset was acquired",
+    "metrics_id": "Foreign key to logistics_metrics.id"
+   }
+  },
+  "logistics_assignments": {
+   "description": "One row per assignment of a person to a role over a date range.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned",
+    "role": "Role assigned during the period",
+    "start_date": "Date the assignment starts",
+    "end_date": "Date the assignment ends; may precede start_date in some rows, so validate before using"
+   }
+  },
+  "logistics_audits": {
+   "description": "One row per logistics audit, recording the auditor, score, audit date, and status.",
+   "columns": {
+    "auditor": "Identifier of the person or team that performed the audit",
+    "score": "Audit score; scale not documented",
+    "audited_on": "Date the audit was performed",
+    "status": "Audit state, e.g. open, pending, active"
+   }
+  },
+  "logistics_contracts": {
+   "description": "One row per logistics contract, recording the vendor, contract value, and signing and expiry dates.",
+   "columns": {
+    "vendor": "Identifier of the contracted vendor",
+    "value": "Total contract value, in currency units",
+    "signed_on": "Date the contract was signed",
+    "expires_on": "Date the contract expires; may precede signed_on in some rows, so validate before using"
+   }
+  },
+  "logistics_locations": {
+   "description": "One row per logistics site, with its name, location, and capacity.",
+   "columns": {
+    "capacity": "Site capacity; unit not documented"
+   }
+  },
+  "logistics_metrics": {
+   "description": "One row per measured metric value, recording the metric name, value, measurement date, and unit.",
+   "columns": {
+    "unit": "Unit of measure for value (coded identifier, not a standard unit name)",
+    "measured_on": "Date the metric was measured"
+   }
+  },
+  "logistics_payments": {
+   "description": "One row per payment made against a logistics contract, recording payee, amount, date, and payment method.",
+   "columns": {
+    "amount": "Payment amount, in currency units",
+    "method": "Payment method code",
+    "contracts_id": "Foreign key to logistics_contracts.id"
+   }
+  },
+  "logistics_requests": {
+   "description": "One row per logistics request, recording who requested it, its priority, date, status, and related audit.",
+   "columns": {
+    "priority": "Request priority label; values overlap with status-like terms (e.g. closed, archived), so verify before filtering",
+    "status": "Request state, e.g. active, closed, pending",
+    "audits_id": "Foreign key to logistics_audits.id"
+   }
+  },
+  "logistics_shipper_rates": {
+   "description": "One row per carrier rate for a shipping zone, linked to a logistics account.",
+   "columns": {
+    "zone": "Shipping zone code the rate applies to",
+    "rate_per_kg": "Shipping charge per kilogram, in currency units",
+    "accounts_id": "Foreign key to logistics_accounts.id"
+   }
+  },
+  "logistics_vendors": {
+   "description": "One row per logistics vendor, with its company name, country, rating, and relationship start date.",
+   "columns": {
+    "rating": "Vendor rating score; scale not documented",
+    "since": "Date the vendor relationship started"
+   }
+  },
+  "manufacturing_assignments": {
+   "description": "One row per assignment of a person to a role in manufacturing, linked to a payment record.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned",
+    "role": "Role assigned during the period",
+    "start_date": "Date the assignment starts",
+    "end_date": "Date the assignment ends; may precede start_date in some rows, so validate before using",
+    "payments_id": "Foreign key to manufacturing_payments.id"
+   }
+  },
+  "manufacturing_audits": {
+   "description": "One row per manufacturing audit, recording the auditor, score, audit date, and status.",
+   "columns": {
+    "score": "Audit score; scale not documented",
+    "status": "Audit state, e.g. open, active, archived"
+   }
+  },
+  "manufacturing_budgets": {
+   "description": "One row per manufacturing budget, recording the fiscal year, amount, owner, and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer code; sample values do not look like calendar years, so verify the encoding",
+    "amount": "Budget amount, in currency units",
+    "status": "Budget state, e.g. open, closed, pending"
+   }
+  },
+  "manufacturing_contracts": {
+   "description": "One row per manufacturing contract, linked to the product specification it covers.",
+   "columns": {
+    "vendor": "Identifier of the contracted vendor",
+    "value": "Total contract value, in currency units",
+    "signed_on": "Date the contract was signed",
+    "expires_on": "Date the contract expires; may precede signed_on in some rows, so validate before using",
+    "product_specs_id": "Foreign key to manufacturing_product_specs.id"
+   }
+  },
+  "manufacturing_documents": {
+   "description": "One row per manufacturing document, with its title, type, creation date, and author.",
+   "columns": {
+    "doc_type": "Document type code",
+    "author": "Identifier of the person who created the document"
+   }
+  },
+  "manufacturing_incidents": {
+   "description": "One row per reported manufacturing incident, with a summary, severity, report date, and resolution state.",
+   "columns": {
+    "severity": "Incident severity label; values overlap with status-like terms, so verify before filtering",
+    "resolved": "Resolution state, e.g. open, pending, closed"
+   }
+  },
+  "manufacturing_metrics": {
+   "description": "One row per measured manufacturing metric value, with its name, value, measurement date, and unit.",
+   "columns": {
+    "unit": "Unit of measure for value (coded identifier, not a standard unit name)",
+    "measured_on": "Date the metric was measured"
+   }
+  },
+  "manufacturing_notes": {
+   "description": "One row per note written against a manufacturing incident.",
+   "columns": {
+    "body": "Note text content",
+    "visibility": "Visibility state of the note, e.g. active, archived, closed",
+    "incidents_id": "Foreign key to manufacturing_incidents.id"
+   }
+  },
+  "manufacturing_payments": {
+   "description": "One row per manufacturing payment, recording payee, amount, date, and payment method.",
+   "columns": {
+    "amount": "Payment amount, in currency units",
+    "method": "Payment method code"
+   }
+  },
+  "manufacturing_product_specs": {
+   "description": "One row per product specification entry, stored as a name/value pair for a product code and linked to a budget.",
+   "columns": {
+    "product_code": "Identifier of the product the specification belongs to",
+    "spec_name": "Name of the specification attribute",
+    "spec_value": "Value of the specification attribute, stored as text",
+    "budgets_id": "Foreign key to manufacturing_budgets.id"
+   }
+  },
+  "manufacturing_requests": {
+   "description": "One row per manufacturing request, recording who requested it, its priority, date, and status.",
+   "columns": {
+    "priority": "Request priority label; values overlap with status-like terms, so verify before filtering",
+    "status": "Request state, e.g. pending, active, archived"
+   }
+  },
+  "marketing_accounts": {
+   "description": "One row per marketing account, linked to a marketing asset.",
+   "columns": {
+    "account_code": "Internal code identifying the account",
+    "status": "Account state, e.g. open, closed, archived",
+    "opened_on": "Date the account was opened",
+    "assets_id": "Foreign key to marketing_assets.id"
+   }
+  },
+  "marketing_artist_partnerships": {
+   "description": "One row per artist partnership on a marketing campaign, with the artist, campaign, and fee.",
+   "columns": {
+    "campaign": "Campaign identifier the partnership supports",
+    "fee": "Partnership fee, in currency units"
+   }
+  },
+  "marketing_assets": {
+   "description": "One row per marketing asset, with its tag, category, purchase cost, and acquisition date.",
+   "columns": {
+    "asset_tag": "Internal identifier label for the asset",
+    "purchase_cost": "Original purchase cost of the asset, in currency units",
+    "acquired_on": "Date the asset was acquired"
+   }
+  },
+  "marketing_budgets": {
+   "description": "One row per marketing budget, recording the fiscal year, amount, owner, and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year as an integer code; sample values do not look like calendar years, so verify the encoding",
+    "amount": "Budget amount, in currency units",
+    "status": "Budget state, e.g. pending, archived, closed"
+   }
+  },
+  "marketing_payments": {
+   "description": "One row per marketing payment, recording payee, amount, date, and payment method.",
+   "columns": {
+    "amount": "Payment amount, in currency units",
+    "method": "Payment method code"
+   }
+  },
+  "marketing_requests": {
+   "description": "One row per marketing request, recording who requested it, its priority, date, and status.",
+   "columns": {
+    "priority": "Request priority label; values overlap with status-like terms, so verify before filtering",
+    "status": "Request state, e.g. pending, active, archived"
+   }
+  },
+  "music_Album": {
+   "description": "One row per music album, linking its title to the artist who made it.",
+   "columns": {
+    "ArtistId": "Foreign key to music_Artist.ArtistId"
+   }
+  },
+  "music_Artist": {
+   "description": "One row per music artist or band.",
+   "columns": {}
+  },
+  "music_Customer": {
+   "description": "One row per customer of the music store, with contact and address details and an optional assigned support representative.",
+   "columns": {
+    "State": "State or province; None when not applicable",
+    "Fax": "Fax number; None when not provided",
+    "SupportRepId": "Foreign key to music_Employee.EmployeeId for the customer's assigned support representative"
+   }
+  },
+  "music_Employee": {
+   "description": "One row per employee, with job title, reporting line, dates, and contact details.",
+   "columns": {
+    "ReportsTo": "Foreign key to music_Employee.EmployeeId for the employee's manager; None for top-level employees",
+    "BirthDate": "Employee date of birth, stored as a datetime",
+    "HireDate": "Date the employee was hired, stored as a datetime"
+   }
+  },
+  "music_Genre": {
+   "description": "One row per music genre (e.g. Rock, Jazz).",
+   "columns": {}
+  },
+  "music_Invoice": {
+   "description": "One row per sales invoice placed by a customer, with the billing address and invoice total.",
+   "columns": {
+    "CustomerId": "Foreign key to music_Customer.CustomerId",
+    "InvoiceDate": "Date and time the invoice was issued, stored as a datetime",
+    "BillingState": "Billing state or province; None when not applicable",
+    "Total": "Invoice total, in currency units; equals the sum of its line amounts"
+   }
+  },
+  "music_InvoiceLine": {
+   "description": "One row per track purchased on an invoice, with unit price and quantity.",
+   "columns": {
+    "InvoiceId": "Foreign key to music_Invoice.InvoiceId",
+    "TrackId": "Foreign key to the purchased track (music_Track)",
+    "UnitPrice": "Price per unit of the track, in currency units",
+    "Quantity": "Number of units of the track purchased on this line"
+   }
+  },
+  "music_MediaType": {
+   "description": "One row per media format (e.g. MPEG audio file, Protected AAC audio file).",
+   "columns": {}
+  },
+  "music_Playlist": {
+   "description": "One row per playlist, identified by name.",
+   "columns": {}
+  },
+  "music_PlaylistTrack": {
+   "description": "One row per track included in a playlist; the composite key is (PlaylistId, TrackId), so it is a many-to-many link table.",
+   "columns": {
+    "PlaylistId": "Foreign key to music_Playlist.PlaylistId",
+    "TrackId": "Foreign key to the included track (music_Track)"
+   }
+  },
+  "music_Track": {
+   "description": "One row per music track, with its album, media type, genre, length, file size and unit price; the core catalog table for tracks.",
+   "columns": {
+    "Milliseconds": "track length in milliseconds",
+    "Bytes": "file size in bytes",
+    "UnitPrice": "price per track in the store's currency",
+    "MediaTypeId": "foreign key to the media type (format) of the track",
+    "Composer": "composer credits as free text; may be 'None'"
+   }
+  },
+  "payroll_budgets": {
+   "description": "One row per budget line for the payroll area, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "integer period label, not a calendar year; sample values such as 4 and 146 are not years",
+    "amount": "budgeted amount",
+    "status": "budget state; allowed values are not documented"
+   }
+  },
+  "payroll_contracts": {
+   "description": "One row per payroll-area contract with a vendor, value and signing and expiry dates.",
+   "columns": {
+    "value": "contract value in currency units",
+    "expires_on": "contract end date; sample rows show dates before signed_on, so the data may be unreliable"
+   }
+  },
+  "payroll_documents": {
+   "description": "One row per document in the payroll area, linked to the vendor it concerns.",
+   "columns": {
+    "doc_type": "document category code",
+    "vendors_id": "foreign key to payroll_vendors.id"
+   }
+  },
+  "payroll_incidents": {
+   "description": "One row per reported payroll-area incident, with its severity and resolution state.",
+   "columns": {
+    "severity": "severity label; allowed values are not documented",
+    "resolved": "resolution state label; allowed values are not documented"
+   }
+  },
+  "payroll_metrics": {
+   "description": "One measured value per row for a named metric in the payroll area, linked to a source document.",
+   "columns": {
+    "value": "measured numeric value; unit is given in the unit column",
+    "unit": "unit of measure given as a free-text code, not a standard unit",
+    "documents_id": "foreign key to payroll_documents.id"
+   }
+  },
+  "payroll_vendors": {
+   "description": "One row per payroll-area vendor (company), with its country and rating.",
+   "columns": {
+    "rating": "vendor score as an integer; scale is not documented",
+    "since": "date the vendor relationship started"
+   }
+  },
+  "pharmacy_accounts": {
+   "description": "One row per pharmacy-area account, identified by an account code and a name.",
+   "columns": {
+    "status": "account state label; allowed values are not documented"
+   }
+  },
+  "pharmacy_assets": {
+   "description": "One row per pharmacy-area asset with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "purchase_cost": "purchase price in currency units",
+    "category": "asset category code"
+   }
+  },
+  "pharmacy_assignments": {
+   "description": "One row per assignment of a person to a role in the pharmacy area, with a start and end date.",
+   "columns": {
+    "assignee": "identifier of the person or entity assigned",
+    "role": "role code; allowed values are not documented"
+   }
+  },
+  "pharmacy_budgets": {
+   "description": "One row per budget line in the pharmacy area, optionally linked to a pharmacy document.",
+   "columns": {
+    "fiscal_year": "integer period label, not a calendar year; sample values such as 129 and 318 are not years",
+    "amount": "budgeted amount",
+    "status": "budget state label; allowed values are not documented",
+    "documents_id": "foreign key to pharmacy_documents.id"
+   }
+  },
+  "pharmacy_contracts": {
+   "description": "One row per pharmacy-area contract with a vendor, value and signing and expiry dates.",
+   "columns": {
+    "value": "contract value in currency units",
+    "expires_on": "contract end date; sample rows show dates before signed_on, so the data may be unreliable"
+   }
+  },
+  "pharmacy_documents": {
+   "description": "One row per document in the pharmacy area, with its type, creation date and author.",
+   "columns": {
+    "doc_type": "document category code"
+   }
+  },
+  "pharmacy_locations": {
+   "description": "One row per pharmacy-area site, with its location, capacity and an optional link to a note.",
+   "columns": {
+    "capacity": "site capacity as an integer; unit is not documented",
+    "notes_id": "foreign key to pharmacy_notes.id"
+   }
+  },
+  "pharmacy_notes": {
+   "description": "One note per row in the pharmacy area, with its author, date and visibility.",
+   "columns": {
+    "body": "note text, stored as a short code-like string in the sample data",
+    "visibility": "visibility label; allowed values are not documented"
+   }
+  },
+  "pharmacy_payments": {
+   "description": "One row per payment made in the pharmacy area, with payee, amount, date and payment method.",
+   "columns": {
+    "amount": "payment amount in currency units",
+    "method": "payment method label; allowed values are not documented"
+   }
+  },
+  "procurement_assets": {
+   "description": "One row per procurement-area asset with its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "purchase_cost": "purchase price in currency units",
+    "category": "asset category code",
+    "notes_id": "foreign key to procurement_notes.id"
+   }
+  },
+  "procurement_audits": {
+   "description": "One audit per row in the procurement area, with the auditor, score, audit date and status.",
+   "columns": {
+    "score": "audit score as an integer; scale is not documented",
+    "status": "audit state label; allowed values are not documented"
+   }
+  },
+  "procurement_budgets": {
+   "description": "One row per budget line in the procurement area, optionally linked to a procurement asset.",
+   "columns": {
+    "fiscal_year": "integer period label, not a calendar year; sample values such as 348 and 397 are not years",
+    "amount": "budgeted amount",
+    "status": "budget state label; allowed values are not documented",
+    "assets_id": "foreign key to procurement_assets.id"
+   }
+  },
+  "procurement_contracts": {
+   "description": "One row per procurement-area contract with a vendor, value and signing and expiry dates.",
+   "columns": {
+    "value": "contract value in currency units",
+    "expires_on": "contract end date; sample rows show dates before signed_on, so the data may be unreliable"
+   }
+  },
+  "procurement_documents": {
+   "description": "One row per document in the procurement area, optionally linked to a payment.",
+   "columns": {
+    "doc_type": "document category code",
+    "payments_id": "foreign key to procurement_payments.id"
+   }
+  },
+  "procurement_incidents": {
+   "description": "One row per reported procurement-area incident, linked to a document.",
+   "columns": {
+    "severity": "severity label; allowed values are not documented",
+    "resolved": "resolution state label; allowed values are not documented",
+    "documents_id": "foreign key to procurement_documents.id"
+   }
+  },
+  "procurement_metrics": {
+   "description": "One measured value per row for a named metric in the procurement area, linked to a document.",
+   "columns": {
+    "value": "measured numeric value; unit is given in the unit column",
+    "unit": "unit of measure given as a free-text code, not a standard unit",
+    "documents_id": "foreign key to procurement_documents.id"
+   }
+  },
+  "procurement_notes": {
+   "description": "One note per row in the procurement area, linked to an incident.",
+   "columns": {
+    "body": "note text, stored as a short code-like string in the sample data",
+    "visibility": "visibility label; allowed values are not documented",
+    "incidents_id": "foreign key to procurement_incidents.id"
+   }
+  },
+  "procurement_payments": {
+   "description": "One row per payment made in the procurement area, linked to a document.",
+   "columns": {
+    "amount": "payment amount in currency units",
+    "method": "payment method label; allowed values are not documented",
+    "documents_id": "foreign key to procurement_documents.id"
+   }
+  },
+  "procurement_requests": {
+   "description": "One purchase or procurement request per row, with requester, priority, date and status.",
+   "columns": {
+    "priority": "priority label; allowed values are not documented",
+    "status": "request state label; allowed values are not documented"
+   }
+  },
+  "quality_accounts": {
+   "description": "One row per quality-area account, identified by an account code and a name.",
+   "columns": {
+    "status": "account state label; allowed values are not documented"
+   }
+  },
+  "quality_assignments": {
+   "description": "One row per assignment of a person to a role in the quality area, with a start and end date.",
+   "columns": {
+    "assignee": "identifier of the person or entity assigned",
+    "role": "role code; allowed values are not documented"
+   }
+  },
+  "quality_budgets": {
+   "description": "One row per budget line in the quality area, optionally linked to a quality request.",
+   "columns": {
+    "fiscal_year": "integer period label, not a calendar year; sample values such as 261 and 436 are not years",
+    "amount": "budgeted amount",
+    "status": "budget state label; allowed values are not documented",
+    "requests_id": "foreign key to quality_requests.id"
+   }
+  },
+  "quality_incidents": {
+   "description": "One row per reported quality-area incident, with its severity and resolution state.",
+   "columns": {
+    "severity": "severity label; allowed values are not documented",
+    "resolved": "resolution state label; allowed values are not documented"
+   }
+  },
+  "quality_locations": {
+   "description": "One row per quality-area site, with its location, capacity and an optional link to a budget.",
+   "columns": {
+    "capacity": "site capacity as an integer; unit is not documented",
+    "budgets_id": "foreign key to quality_budgets.id"
+   }
+  },
+  "quality_metrics": {
+   "description": "One measured value per row for a named metric in the quality area, linked to an incident.",
+   "columns": {
+    "value": "measured numeric value; unit is given in the unit column",
+    "unit": "unit of measure given as a free-text code, not a standard unit",
+    "incidents_id": "foreign key to quality_incidents.id"
+   }
+  },
+  "quality_requests": {
+   "description": "One quality request per row, with requester, priority, date and status.",
+   "columns": {
+    "priority": "priority label; sample values are all 'open', so allowed values are not documented",
+    "status": "request state label; allowed values are not documented"
+   }
+  },
+  "rail_accounts": {
+   "description": "One row per rail-area account, identified by an account code and a name.",
+   "columns": {
+    "status": "account state label; allowed values are not documented"
+   }
+  },
+  "rail_assignments": {
+   "description": "One row per assignment of a person to a role in the rail area, with a start and end date.",
+   "columns": {
+    "assignee": "identifier of the person or entity assigned",
+    "role": "role code; allowed values are not documented"
+   }
+  },
+  "rail_audits": {
+   "description": "One audit per row in the rail area, linked to the account it covers.",
+   "columns": {
+    "score": "audit score as an integer; scale is not documented",
+    "status": "audit state label; allowed values are not documented",
+    "accounts_id": "foreign key to rail_accounts.id"
+   }
+  },
+  "rail_documents": {
+   "description": "One row per document in the rail area, with its type, creation date and author.",
+   "columns": {
+    "doc_type": "document category code"
+   }
+  },
+  "rail_metrics": {
+   "description": "One measured value per row for a named metric in the rail area, linked to an audit.",
+   "columns": {
+    "value": "measured numeric value; unit is given in the unit column",
+    "unit": "unit of measure given as a free-text code, not a standard unit",
+    "audits_id": "foreign key to rail_audits.id"
+   }
+  },
+  "rail_requests": {
+   "description": "One rail request per row, linked to the account that made it.",
+   "columns": {
+    "priority": "priority label; allowed values are not documented",
+    "status": "request state label; allowed values are not documented",
+    "accounts_id": "foreign key to rail_accounts.id"
+   }
+  },
+  "rail_track_maintenance": {
+   "description": "One track inspection per row, recording the track section, inspection date and number of defects found, linked to an audit.",
+   "columns": {
+    "track_section": "identifier of the inspected track section",
+    "defects": "count of defects found at the inspection",
+    "audits_id": "foreign key to rail_audits.id"
+   }
+  },
+  "realestate_assets": {
+   "description": "One row per real estate asset, recording its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "category": "Asset category code (stored as coded text, not a readable label).",
+    "purchase_cost": "Original purchase price; currency not specified.",
+    "acquired_on": "Date the asset was acquired (YYYY-MM-DD)."
+   }
+  },
+  "realestate_documents": {
+   "description": "One row per document, recording its title, type, creation date and author.",
+   "columns": {
+    "doc_type": "Document type code (coded text, not a readable label)."
+   }
+  },
+  "realestate_incidents": {
+   "description": "One row per reported incident, with its summary, severity, reporting date and resolution state, optionally linked to a note.",
+   "columns": {
+    "severity": "Severity label as stored; sample values are not a consistent scale.",
+    "resolved": "Resolution state as stored (free-text status, not a boolean).",
+    "notes_id": "Foreign key to realestate_notes.id; the related note, if any."
+   }
+  },
+  "realestate_notes": {
+   "description": "One row per note, with its body text, author, date written and visibility.",
+   "columns": {
+    "visibility": "Visibility or access state as stored (free-text status)."
+   }
+  },
+  "realestate_schedules": {
+   "description": "One row per scheduled time window, linked to an incident, with its label, start and end times and status.",
+   "columns": {
+    "starts_at": "Start date and time (YYYY-MM-DD HH:MM:SS).",
+    "ends_at": "End date and time (YYYY-MM-DD HH:MM:SS); in sample data it can be earlier than starts_at.",
+    "incidents_id": "Foreign key to realestate_incidents.id."
+   }
+  },
+  "realestate_vendors": {
+   "description": "One row per vendor company, with its name, country, rating and the date the relationship started.",
+   "columns": {
+    "rating": "Numeric rating; scale is not documented (sample values range from about 85 to 500).",
+    "since": "Date the vendor relationship began."
+   }
+  },
+  "recruiting_accounts": {
+   "description": "One row per recruiting account, with its code, name, status and open date.",
+   "columns": {
+    "account_code": "Account code as stored (coded text)."
+   }
+  },
+  "recruiting_assets": {
+   "description": "One row per recruiting asset, recording its tag, category, purchase cost, acquisition date and location.",
+   "columns": {
+    "category": "Asset category code (coded text).",
+    "purchase_cost": "Original purchase price; currency not specified.",
+    "locations_id": "Foreign key to recruiting_locations.id; the site where the asset is held."
+   }
+  },
+  "recruiting_budgets": {
+   "description": "One row per budget line, with fiscal year, amount, owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year stored as an integer; sample values are not calendar years.",
+    "amount": "Budget amount; currency not specified."
+   }
+  },
+  "recruiting_incidents": {
+   "description": "One row per reported incident, with its summary, severity, reporting date and resolution state.",
+   "columns": {
+    "severity": "Severity label as stored; sample values are not a consistent scale.",
+    "resolved": "Resolution state as stored (free-text status, not a boolean)."
+   }
+  },
+  "recruiting_locations": {
+   "description": "One row per recruiting site, with its name, location and capacity.",
+   "columns": {
+    "capacity": "Site capacity as an integer; unit not specified."
+   }
+  },
+  "recruiting_requests": {
+   "description": "One row per recruiting request, with requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority as stored (coded text; sample values are not a standard priority scale)."
+   }
+  },
+  "recruiting_schedules": {
+   "description": "One row per scheduled time window, with its label, start and end times and status.",
+   "columns": {
+    "starts_at": "Start date and time (YYYY-MM-DD HH:MM:SS).",
+    "ends_at": "End date and time (YYYY-MM-DD HH:MM:SS); in sample data it can be earlier than starts_at."
+   }
+  },
+  "recruiting_vendors": {
+   "description": "One row per vendor company, linked to a recruiting account, with its name, country, rating and start date.",
+   "columns": {
+    "rating": "Numeric rating; scale is not documented.",
+    "since": "Date the vendor relationship began.",
+    "accounts_id": "Foreign key to recruiting_accounts.id; the account this vendor belongs to."
+   }
+  },
+  "research_assets": {
+   "description": "One row per research asset, recording its tag, category, purchase cost and acquisition date.",
+   "columns": {
+    "category": "Asset category code (coded text).",
+    "purchase_cost": "Original purchase price; currency not specified.",
+    "acquired_on": "Date the asset was acquired (YYYY-MM-DD)."
+   }
+  },
+  "research_assignments": {
+   "description": "One row per assignment of a person or entity to a role over a date range.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned (coded text).",
+    "role": "Role code (coded text).",
+    "end_date": "End date of the assignment; in sample data it can be earlier than start_date."
+   }
+  },
+  "research_audits": {
+   "description": "One row per audit, with the auditor, score, audit date and status.",
+   "columns": {
+    "score": "Audit score as an integer; scale not documented."
+   }
+  },
+  "research_contracts": {
+   "description": "One row per contract with a vendor, its value, signing and expiry dates, and an optional linked incident.",
+   "columns": {
+    "value": "Contract value; currency not specified.",
+    "incidents_id": "Foreign key to research_incidents.id; the related incident, if any."
+   }
+  },
+  "research_documents": {
+   "description": "One row per document, optionally linked to an assignment.",
+   "columns": {
+    "doc_type": "Document type code (coded text).",
+    "assignments_id": "Foreign key to research_assignments.id; the related assignment, if any."
+   }
+  },
+  "research_incidents": {
+   "description": "One row per reported incident, with its summary, severity, reporting date and resolution state.",
+   "columns": {
+    "severity": "Severity label as stored; sample values are not a consistent scale.",
+    "resolved": "Resolution state as stored (free-text status, not a boolean)."
+   }
+  },
+  "research_metrics": {
+   "description": "One row per measured metric value, with its name, measured value, measurement date and unit.",
+   "columns": {
+    "unit": "Unit label as stored (coded text)."
+   }
+  },
+  "research_notes": {
+   "description": "One row per note, optionally linked to a contract.",
+   "columns": {
+    "visibility": "Visibility or access state as stored (free-text status).",
+    "contracts_id": "Foreign key to research_contracts.id; the related contract, if any."
+   }
+  },
+  "research_payments": {
+   "description": "One row per payment, with payee, amount, payment date and payment method.",
+   "columns": {
+    "amount": "Payment amount; currency not specified.",
+    "method": "Payment method code (coded text)."
+   }
+  },
+  "research_requests": {
+   "description": "One row per research request, with requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority as stored (coded text; sample values are not a standard priority scale)."
+   }
+  },
+  "research_vendors": {
+   "description": "One row per vendor company, with its name, country, rating and start date.",
+   "columns": {
+    "rating": "Numeric rating; scale is not documented.",
+    "since": "Date the vendor relationship began."
+   }
+  },
+  "school_assignments": {
+   "description": "One row per assignment of a person or entity to a role over a date range.",
+   "columns": {
+    "assignee": "Identifier of the person or entity assigned (coded text).",
+    "role": "Role code (coded text).",
+    "end_date": "End date of the assignment; in sample data it can be earlier than start_date."
+   }
+  },
+  "school_documents": {
+   "description": "One row per document, optionally linked to an assignment.",
+   "columns": {
+    "doc_type": "Document type code (coded text).",
+    "assignments_id": "Foreign key to school_assignments.id; the related assignment, if any."
+   }
+  },
+  "school_incidents": {
+   "description": "One row per reported incident, linked to a metric, with its summary, severity, reporting date and resolution state.",
+   "columns": {
+    "severity": "Severity label as stored; sample values are not a consistent scale.",
+    "resolved": "Resolution state as stored (free-text status, not a boolean).",
+    "metrics_id": "Foreign key to school_metrics.id; the related metric, if any."
+   }
+  },
+  "school_locations": {
+   "description": "One row per school site, with its name, location, capacity and an optional linked payment.",
+   "columns": {
+    "capacity": "Site capacity as an integer; unit not specified.",
+    "payments_id": "Foreign key to school_payments.id; the related payment, if any."
+   }
+  },
+  "school_metrics": {
+   "description": "One row per measured metric value, linked to a request, with its name, value, measurement date and unit.",
+   "columns": {
+    "unit": "Unit label as stored (coded text).",
+    "requests_id": "Foreign key to school_requests.id; the related request, if any."
+   }
+  },
+  "school_notes": {
+   "description": "One row per note, with its body text, author, date written and visibility.",
+   "columns": {
+    "visibility": "Visibility or access state as stored (free-text status)."
+   }
+  },
+  "school_payments": {
+   "description": "One row per payment, linked to a request, with payee, amount, payment date and method.",
+   "columns": {
+    "amount": "Payment amount; currency not specified.",
+    "method": "Payment method code (coded text).",
+    "requests_id": "Foreign key to school_requests.id; the related request, if any."
+   }
+  },
+  "school_requests": {
+   "description": "One row per request, with requester, priority, request date and status.",
+   "columns": {
+    "priority": "Priority as stored (coded text; sample values are not a standard priority scale)."
+   }
+  },
+  "school_schedules": {
+   "description": "One row per scheduled time window, linked to a vendor, with its label, start and end times and status.",
+   "columns": {
+    "starts_at": "Start date and time (YYYY-MM-DD HH:MM:SS).",
+    "ends_at": "End date and time (YYYY-MM-DD HH:MM:SS); in sample data it can be earlier than starts_at.",
+    "vendors_id": "Foreign key to school_vendors.id; the related vendor."
+   }
+  },
+  "school_vendors": {
+   "description": "One row per vendor company, with its name, country, rating and start date.",
+   "columns": {
+    "rating": "Numeric rating; scale is not documented.",
+    "since": "Date the vendor relationship began."
+   }
+  },
+  "shop_Categories": {
+   "description": "One row per product category (Northwind-style sample shop), with its name, description and image.",
+   "columns": {
+    "Picture": "Category image stored as raw JPEG bytes (BLOB)."
+   }
+  },
+  "shop_CustomerCustomerDemo": {
+   "description": "Junction table linking customers to customer demographic types (many-to-many).",
+   "columns": {
+    "CustomerID": "Foreign key to shop_Customers.CustomerID.",
+    "CustomerTypeID": "Foreign key to shop_CustomerDemographics.CustomerTypeID."
+   }
+  },
+  "shop_CustomerDemographics": {
+   "description": "One row per customer demographic type, with its description. Currently empty.",
+   "columns": {}
+  },
+  "shop_Customers": {
+   "description": "One row per customer company, with contact details and address. Region holds a region name, not a code.",
+   "columns": {
+    "CustomerID": "Five-character customer code (e.g. ALFKI).",
+    "Region": "Region name (e.g. 'Western Europe'); not a code.",
+    "Fax": "Fax number; may be NULL."
+   }
+  },
+  "shop_EmployeeTerritories": {
+   "description": "Junction table linking employees to the sales territories they cover (many-to-many).",
+   "columns": {
+    "EmployeeID": "Foreign key to shop_Employees.EmployeeID.",
+    "TerritoryID": "Foreign key to shop_Territories.TerritoryID."
+   }
+  },
+  "shop_Employees": {
+   "description": "One row per employee of the company, holding their personal, contact, and reporting details.",
+   "columns": {
+    "Title": "Job title (e.g., Sales Representative)",
+    "TitleOfCourtesy": "Form of address such as Mr., Ms., or Dr.",
+    "Region": "Geographic sales region label, not a state or province code",
+    "Extension": "Internal phone extension",
+    "Photo": "Raw binary image data (OLE/BMP bytes), not a file path",
+    "ReportsTo": "EmployeeID of this employee's direct manager; NULL for top of hierarchy",
+    "PhotoPath": "URL of the employee's photo file"
+   }
+  },
+  "shop_Order Details": {
+   "description": "One row per product line within an order, recording the price, quantity, and discount for that product on that order; the composite key is (OrderID, ProductID).",
+   "columns": {
+    "UnitPrice": "Price per unit charged on this order, captured at order time (may differ from current Products.UnitPrice)",
+    "Quantity": "Number of units of the product on this order line (always greater than 0)",
+    "Discount": "Fraction of UnitPrice discounted, from 0 (none) to 1 (100%)"
+   }
+  },
+  "shop_Orders": {
+   "description": "One row per customer order, with dates, the assigned employee, and shipping details including the destination address.",
+   "columns": {
+    "CustomerID": "Customer code from shop_Customers (5-character code)",
+    "RequiredDate": "Date the customer requested delivery by",
+    "ShippedDate": "Date the order was shipped; NULL if not yet shipped",
+    "ShipVia": "ShipperID of the shipping company from shop_Shippers",
+    "Freight": "Shipping cost charged for the order, in the currency of the sales data",
+    "ShipName": "Recipient name on the shipment, which may differ from the customer name",
+    "ShipRegion": "Region of the shipping destination",
+    "ShipPostalCode": "Postal code of the shipping destination (format varies by country)"
+   }
+  },
+  "shop_Products": {
+   "description": "One row per product in the catalog, with its supplier, category, pricing, and inventory levels.",
+   "columns": {
+    "SupplierID": "Supplier of the product, from shop_Suppliers",
+    "CategoryID": "Product category, from shop_Categories",
+    "QuantityPerUnit": "Packaging description, such as '24 - 12 oz bottles'",
+    "UnitPrice": "Current list price per unit",
+    "UnitsInStock": "Units currently in the warehouse",
+    "UnitsOnOrder": "Units already ordered from the supplier but not yet received",
+    "ReorderLevel": "Stock level at which the product should be reordered",
+    "Discontinued": "'1' = no longer sold, '0' = still active; stored as text"
+   }
+  },
+  "shop_Regions": {
+   "description": "Lookup table of the sales regions, each with a numeric ID and a name.",
+   "columns": {}
+  },
+  "shop_Shippers": {
+   "description": "Lookup table of shipping companies that can deliver orders.",
+   "columns": {}
+  },
+  "shop_Suppliers": {
+   "description": "One row per supplier company that provides products, with contact and location details.",
+   "columns": {
+    "ContactTitle": "Job title of the contact person",
+    "Region": "Region label of the supplier location, not a state or province code",
+    "PostalCode": "Postal code of the supplier location (format varies by country)",
+    "Fax": "Fax number; NULL when not available",
+    "HomePage": "Supplier web page reference; may be a placeholder such as '#CAJUN.HTM#' or NULL"
+   }
+  },
+  "shop_Territories": {
+   "description": "Lookup table of sales territories, each assigned to one sales region.",
+   "columns": {
+    "TerritoryID": "Territory code stored as text, with leading zeros preserved",
+    "RegionID": "Region this territory belongs to, from shop_Regions"
+   }
+  },
+  "telecom_assignments": {
+   "description": "One row per assignment linking an assignee to a role over a date range.",
+   "columns": {
+    "assignee": "Code identifying the assignee (anonymized name)",
+    "role": "Code identifying the role assigned (anonymized)",
+    "start_date": "Assignment start date (ISO format)",
+    "end_date": "Assignment end date; some rows end before they start, so validate before use"
+   }
+  },
+  "telecom_documents": {
+   "description": "One row per document, linked optionally to an assignment.",
+   "columns": {
+    "title": "Document title (anonymized code)",
+    "doc_type": "Document type code (anonymized)",
+    "created_on": "Date the document was created",
+    "author": "Author code (anonymized)",
+    "assignments_id": "id of the related row in telecom_assignments; NULL if none"
+   }
+  },
+  "telecom_metrics": {
+   "description": "One row per measured metric value, recorded on a date in a given unit.",
+   "columns": {
+    "metric_name": "Name code of the metric (anonymized)",
+    "value": "Numeric measurement of the metric",
+    "measured_on": "Date the measurement was taken",
+    "unit": "Unit code for the value (anonymized, not a standard unit)"
+   }
+  },
+  "telecom_schedules": {
+   "description": "One row per scheduled time window with a label and status.",
+   "columns": {
+    "label": "Name code for the schedule (anonymized)",
+    "starts_at": "Start timestamp of the window (YYYY-MM-DD HH:MM:SS)",
+    "ends_at": "End timestamp of the window; some rows end before they start, so validate before use",
+    "status": "Current state of the schedule, e.g., 'active' or 'closed'"
+   }
+  },
+  "telecom_vendors": {
+   "description": "One row per vendor company, linked optionally to a metrics record.",
+   "columns": {
+    "company_name": "Vendor name (anonymized code)",
+    "country": "Country code (anonymized)",
+    "rating": "Integer vendor score; scale is not documented and values exceed typical 1-5 ranges",
+    "since": "Date the vendor relationship began",
+    "metrics_id": "id of the related row in telecom_metrics; NULL if none"
+   }
+  },
+  "warehouse_assets": {
+   "description": "One row per physical or capital asset held in the warehouse, with its purchase cost and budget link.",
+   "columns": {
+    "asset_tag": "Inventory tag code for the asset (anonymized)",
+    "category": "Asset category code (anonymized)",
+    "purchase_cost": "Original purchase price of the asset",
+    "acquired_on": "Date the asset was acquired",
+    "budgets_id": "id of the funding budget in warehouse_budgets"
+   }
+  },
+  "warehouse_audits": {
+   "description": "One row per audit, with an auditor, score, date, and status.",
+   "columns": {
+    "auditor": "Code of the person or team who performed the audit (anonymized)",
+    "score": "Numeric audit score; scale is not documented",
+    "audited_on": "Date of the audit",
+    "status": "Audit state, e.g., open, closed, or archived"
+   }
+  },
+  "warehouse_budgets": {
+   "description": "One row per budget allocation for a fiscal year, with an owner and status.",
+   "columns": {
+    "fiscal_year": "Fiscal year number; values are not clearly calendar years, so verify before use",
+    "amount": "Budgeted amount for the fiscal year",
+    "owner": "Code of the budget owner (anonymized)",
+    "status": "Budget state, e.g., open, pending, or archived"
+   }
+  },
+  "warehouse_contracts": {
+   "description": "One row per vendor contract, linked to a request.",
+   "columns": {
+    "vendor": "Vendor code for the contract counterparty (anonymized)",
+    "value": "Total contract value",
+    "signed_on": "Date the contract was signed",
+    "expires_on": "Contract expiry date; some rows expire before they are signed, so validate before use",
+    "requests_id": "id of the related row in warehouse_requests"
+   }
+  },
+  "warehouse_documents": {
+   "description": "One row per document in the warehouse document store.",
+   "columns": {
+    "title": "Document title (anonymized code)",
+    "doc_type": "Document type code (anonymized)",
+    "created_on": "Date the document was created",
+    "author": "Author code (anonymized)"
+   }
+  },
+  "warehouse_incidents": {
+   "description": "One row per reported incident, linked optionally to a document.",
+   "columns": {
+    "summary": "Short incident summary (anonymized code)",
+    "severity": "Severity label of the incident (e.g., open, active, closed; values are inconsistent)",
+    "reported_on": "Date the incident was reported",
+    "resolved": "Resolution status label (e.g., active, pending, open; values are inconsistent)",
+    "documents_id": "id of the related row in warehouse_documents; NULL if none"
+   }
+  },
+  "warehouse_notes": {
+   "description": "One row per note, with its body, author, date, and visibility.",
+   "columns": {
+    "body": "Note text (anonymized code)",
+    "written_by": "Author code (anonymized)",
+    "written_on": "Date the note was written",
+    "visibility": "Access level of the note, e.g., open, closed, or pending"
+   }
+  },
+  "warehouse_order_picks": {
+   "description": "One row per pick event, recording which picker picked which order and when.",
+   "columns": {
+    "order_ref": "Reference code of the picked order (anonymized)",
+    "picker": "Code of the person who picked the order (anonymized)",
+    "picked_at": "Timestamp when the pick occurred"
+   }
+  },
+  "warehouse_payments": {
+   "description": "One row per payment made to a payee.",
+   "columns": {
+    "payee": "Code of the party receiving payment (anonymized)",
+    "amount": "Amount paid",
+    "paid_on": "Date the payment was made",
+    "method": "Payment method code (anonymized)"
+   }
+  },
+  "warehouse_requests": {
+   "description": "One row per request, linked to a supporting document.",
+   "columns": {
+    "requested_by": "Code of the requester (anonymized)",
+    "priority": "Priority label of the request (values are inconsistent, e.g., pending, open)",
+    "requested_on": "Date the request was made",
+    "status": "Request state, e.g., active or closed",
+    "documents_id": "id of the related row in warehouse_documents"
+   }
+  },
+  "warehouse_vendors": {
+   "description": "One row per vendor company, linked optionally to an incident record.",
+   "columns": {
+    "company_name": "Vendor name (anonymized code)",
+    "country": "Country code (anonymized)",
+    "rating": "Integer vendor score; scale is not documented and values exceed typical 1-5 ranges",
+    "since": "Date the vendor relationship began",
+    "incidents_id": "id of the related row in warehouse_incidents"
+   }
+  }
+ }
+}

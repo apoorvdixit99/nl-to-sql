@@ -6,3 +6,4 @@ data/*.profile.json
 evals/*.log
 data/benchmarks/
 .cache/
+data/*.npy

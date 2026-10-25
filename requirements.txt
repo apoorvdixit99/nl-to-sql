@@ -7,6 +7,8 @@ langgraph>=1.2
 pytest
 streamlit>=1.40
 pandas
+fastembed>=0.4      # local embeddings for vector search (CPU, ~65 MB model download on first use)
+numpy
 # Optional drivers for other databases:
 # psycopg[binary]   (Postgres)
 # pymysql           (MySQL)

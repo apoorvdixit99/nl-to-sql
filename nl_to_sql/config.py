@@ -85,3 +85,12 @@ ALLOW_DDL = False               # CREATE/DROP/ALTER/TRUNCATE/GRANT
 ALLOW_UNBOUNDED_WRITES = False  # UPDATE/DELETE without WHERE
 MAX_SQL_CHARS = 20000
 QUERY_TIMEOUT_S = 15            # per statement (SQLite progress handler / Postgres statement_timeout / MySQL)
+
+# --- Descriptions + vector search (v7) ---
+AUTO_DESCRIBE = True            # generate table/column descriptions once per DB if none exist (cached)
+DESCRIPTIONS_IN_PROMPT = True   # add them to the schema the model sees
+RETRIEVAL = "hybrid"            # "bm25" | "vector" | "hybrid" (Reciprocal Rank Fusion of both)
+EMBED_MODEL = "BAAI/bge-small-en-v1.5"   # local ONNX model via fastembed (~65 MB, CPU, no API calls)
+RRF_K = 60
+BM25_WEIGHT = 1.0               # RRF weight of the BM25 ranking
+VECTOR_WEIGHT = 0.5             # RRF weight of each vector ranking (table docs, column docs)

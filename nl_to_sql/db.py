@@ -29,7 +29,8 @@ class Database:
             raise ValueError(f"Unknown database '{name}'. Options: {', '.join(config.DATABASES)}")
         self.name = name
         self.engine = create_engine(config.DATABASES[name])
-        self._compact: dict[bool, dict[str, str]] = {}
+        self._compact: dict[tuple, dict[str, str]] = {}
+        self.descriptions: dict[str, dict] = {}  # v7: filled by descriptions.ensure()
 
     @property
     def dialect(self) -> str:
@@ -72,10 +73,15 @@ class Database:
         hints=True appends value hints from profile(): {'a','b'} for low-cardinality text
         columns, [min .. max] for date columns, so the model gets formats/codes right.
         """
-        if hints in self._compact:
-            return self._compact[hints]
+        # v7: with descriptions set (see descriptions.ensure), each line also carries them:
+        #   Track(Milliseconds INTEGER "track length in ms", ...)  -- one row per song
+        desc = self.descriptions if config.DESCRIPTIONS_IN_PROMPT else {}
+        key = (hints, bool(desc))
+        if key in self._compact:
+            return self._compact[key]
         insp = inspect(self.engine)
         profile = self.profile() if hints else {}
+        desc_tables = desc
         lines = {}
         for table in self.table_names():
             pk = set(insp.get_pk_constraint(table).get("constrained_columns") or [])
@@ -93,9 +99,15 @@ class Database:
                 hint = profile.get(table, {}).get(c["name"])
                 if hint:
                     desc += f" {hint}"
+                note = desc_tables.get(table, {}).get("columns", {}).get(c["name"])
+                if note:
+                    desc += f' "{note}"'
                 cols.append(desc)
-            lines[table] = f"{table}({', '.join(cols)})"
-        self._compact[hints] = lines
+            line = f"{table}({', '.join(cols)})"
+            if desc_tables.get(table, {}).get("description"):
+                line += f"  -- {desc_tables[table]['description']}"
+            lines[table] = line
+        self._compact[key] = lines
         return lines
 
     def compact_schema(self, hints: bool = False, tables: list[str] | None = None) -> str:

@@ -1,6 +1,11 @@
-"""v4: schema retrieval for large databases. No LLM calls and no extra dependencies.
+"""Schema retrieval for large databases. No LLM calls.
 
-1. BM25 over one document per table: table name (weighted), column names, value hints, FK targets.
+1. Rank tables two ways (v7 "hybrid", the default):
+   - BM25 over one document per table: name (weighted), columns, value hints, FK targets,
+     and descriptions when available,
+   - vector search (local fastembed model) over table documents AND column documents,
+     so "how long is a song" can find Track.Milliseconds via its description.
+   Rankings are merged with Reciprocal Rank Fusion: score = sum(1 / (RRF_K + rank)).
 2. Take the top-k tables, then expand along foreign keys:
    - neighbours of the strongest hits (join partners like InvoiceLine for Invoice/Track),
    - "bridge" tables adjacent to two or more selected tables (many-to-many links).
@@ -9,6 +14,7 @@
 import math
 import re
 from collections import Counter
+from pathlib import Path
 
 from . import config
 from .db import Database
@@ -54,6 +60,8 @@ class TableIndex:
         self.idf = {t: math.log(1 + (n - f + 0.5) / (f + 0.5)) for t, f in df.items()}
         self.tf = {table: Counter(toks) for table, toks in self.docs.items()}
 
+    # ---- BM25 ------------------------------------------------------------------
+
     def scores(self, query: str) -> list[tuple[str, float]]:
         q = tokenize(query)
         out = []
@@ -68,8 +76,71 @@ class TableIndex:
                 out.append((table, s))
         return sorted(out, key=lambda x: -x[1])
 
+    # ---- vectors (v7) ---------------------------------------------------------
+
+    def _build_vectors(self) -> None:
+        """Embed one document per table and one per column; cached on disk by content hash."""
+        if hasattr(self, "_tvec"):
+            return
+        desc = self.db.descriptions
+        cols = self.db.columns()
+        profile = self.db.profile() if config.VALUE_HINTS else {}
+        table_docs, col_docs, self.col_keys = [], [], []
+        for t in self.lines:
+            d = desc.get(t, {})
+            names = ", ".join(f"{c} ({d.get('columns', {})[c]})" if c in d.get("columns", {}) else c
+                              for c in cols.get(t, []))
+            table_docs.append(f"{_words(t)}: {d.get('description', '')} Columns: {names}")
+            for c in cols.get(t, []):
+                hint = profile.get(t, {}).get(c, "")
+                col_docs.append(f"{_words(t)} {_words(c)}: {d.get('columns', {}).get(c, '')} {hint}".strip())
+                self.col_keys.append((t, c))
+        self._tvec = embed_cached(self.db, "tables", table_docs)
+        self._cvec = embed_cached(self.db, "columns", col_docs)
+        self._tables = list(self.lines)
+
+    def vector_rankings(self, query: str) -> tuple[list[str], list[str], list[tuple[str, str]]]:
+        """(tables by table-doc similarity, tables by best column similarity, top columns)."""
+        self._build_vectors()
+        q = embed([query])[0]
+        tsim = self._tvec @ q
+        csim = self._cvec @ q
+        by_table = [self._tables[i] for i in tsim.argsort()[::-1]]
+        best: dict[str, float] = {}
+        for (t, _), sim in zip(self.col_keys, csim):
+            best[t] = max(best.get(t, -1.0), float(sim))
+        by_column = sorted(best, key=lambda t: -best[t])
+        top_cols = [self.col_keys[i] for i in csim.argsort()[::-1][:20]]
+        return by_table, by_column, top_cols
+
+    # ---- fused search ------------------------------------------------------------
+
+    def ranked(self, query: str) -> list[str]:
+        mode = config.RETRIEVAL
+        rankings = []  # (weight, ranking)
+        if mode in ("bm25", "hybrid"):
+            rankings.append((config.BM25_WEIGHT, [t for t, _ in self.scores(query)]))
+        if mode in ("vector", "hybrid") and _have_embedder():
+            by_table, by_column, _ = self.vector_rankings(query)
+            rankings += [(config.VECTOR_WEIGHT, by_table), (config.VECTOR_WEIGHT, by_column)]
+        if len(rankings) == 1:
+            return rankings[0][1]
+        fused: dict[str, float] = {}
+        for weight, ranking in rankings:
+            for rank, t in enumerate(ranking):
+                fused[t] = fused.get(t, 0.0) + weight / (config.RRF_K + rank + 1)
+        return sorted(fused, key=lambda t: -fused[t])
+
     def search(self, query: str, k: int | None = None) -> list[str]:
-        return [t for t, _ in self.scores(query)[: k or config.RETRIEVE_TOP_K]]
+        return self.ranked(query)[: k or config.RETRIEVE_TOP_K]
+
+    def relevant_columns(self, query: str, tables: list[str], k: int = 12) -> list[str]:
+        """Columns of `tables` most similar to the query, as 'Table.Column' (schema agent hint)."""
+        if not _have_embedder():
+            return []
+        _, _, top = self.vector_rankings(query)
+        keep = set(tables)
+        return [f"{t}.{c}" for t, c in top if t in keep][:k]
 
     def select(self, question: str) -> list[str]:
         """Top-k hits plus FK join partners, capped at RETRIEVE_MAX_TABLES."""
@@ -91,3 +162,48 @@ class TableIndex:
             for n in sorted(self.graph.get(h, ())):
                 add(n)
         return chosen
+
+
+# ---- embeddings (local, cached) ---------------------------------------------------
+
+_EMBEDDER = None
+
+
+def _have_embedder() -> bool:
+    try:
+        import fastembed  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def embed(texts: list[str]):
+    """L2-normalised embeddings, shape (n, dim). Loads the model once per process."""
+    global _EMBEDDER
+    import numpy as np
+    if _EMBEDDER is None:
+        from fastembed import TextEmbedding
+        _EMBEDDER = TextEmbedding(config.EMBED_MODEL, cache_dir=str(config.ROOT / ".cache" / "fastembed"))
+    vecs = np.array(list(_EMBEDDER.embed(texts)), dtype="float32")
+    return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-9)
+
+
+def embed_cached(db: Database, kind: str, texts: list[str]):
+    import hashlib
+
+    import numpy as np
+    key = hashlib.sha1((config.EMBED_MODEL + "\x00".join(texts)).encode()).hexdigest()[:16]
+    p = db._sqlite_path()
+    base = p.with_suffix("") if p else config.ROOT / "data" / "vectors" / db.name
+    path = Path(f"{base}.{kind}.{key}.npy")
+    if path.exists():
+        return np.load(path)
+    vecs = embed(texts)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, vecs)
+    return vecs
+
+
+def _words(identifier: str) -> str:
+    """music_InvoiceLine -> 'music invoice line' (embedding models read words, not identifiers)."""
+    return " ".join(w.lower() for w in re.split(r"[^A-Za-z0-9]+", _CAMEL.sub(" ", identifier)) if w)
