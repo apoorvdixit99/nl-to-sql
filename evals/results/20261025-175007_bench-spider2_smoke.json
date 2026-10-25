@@ -1,0 +1,146 @@
+{
+  "benchmark": "spider2",
+  "label": "smoke",
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "architecture": "multi",
+  "n": 3,
+  "accuracy": 0.0,
+  "lenient_accuracy": 0.0,
+  "by_level": {},
+  "llm_calls": 22,
+  "calls_per_question": 7.33,
+  "input_tokens": 126575,
+  "cache_read_tokens": 18214,
+  "output_tokens": 18014,
+  "est_cost_usd": 0.02,
+  "description_generation": {
+    "calls": 3,
+    "input_tokens": 15533,
+    "output_tokens": 11678,
+    "est_cost_usd": 0.0074
+  },
+  "statuses": {
+    "ok": 2,
+    "cannot_answer": 1
+  },
+  "gold_missing": [],
+  "config": {
+    "retrieval": "hybrid",
+    "schema_mode": "auto",
+    "value_hints": true,
+    "descriptions_in_prompt": true,
+    "verify": "flags",
+    "schema_agent": "llm",
+    "multi_validator": "always"
+  },
+  "rows": [
+    {
+      "id": "local063",
+      "db": "complex_oracle",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH base AS (\n  SELECT s.prod_id, cu.cust_city AS city, t.calendar_quarter_id AS q, s.amount_sold AS amt\n  FROM sales s\n  JOIN customers cu ON s.cust_id = cu.cust_id\n  JOIN countries co ON cu.country_id = co.country_id\n  JOIN times t ON s.time_id = t.time_id\n  WHERE co.country_iso_code = 'US' AND s.promo_id = 999\n    AND t.calendar_quarter_id IN (1772, 1776)\n),\ncity_q AS (\n  SELECT city,\n    SUM(CASE WHEN q = 1772 THEN amt ELSE 0 END) AS s19,\n    SUM(CASE WHEN q = 1776 THEN amt ELSE 0 END) AS s20\n  FROM base GROUP BY city\n),\ngood AS (SELECT city FROM city_q WHERE s19 > 0 AND s20 >= 1.2 * s19),\nb AS (SELECT * FROM base WHERE city IN (SELECT city FROM good)),\nqt AS (SELECT q, SUM(amt) AS tot FROM b GROUP BY q),\npq AS (SELECT prod_id, q, SUM(amt) AS psales FROM b GROUP BY prod_id, q),\nps AS (SELECT pq.prod_id, pq.q, pq.psales * 1.0 / qt.tot AS share FROM pq JOIN qt ON pq.q = qt.q),\nprod AS (SELECT prod_id, SUM(psales) AS total FROM pq GROUP BY prod_id),\nranked AS (\n  SELECT prod_id, total, ROW_NUMBER() OVER (ORDER BY total DESC) AS rn, COUNT(*) OVER () AS n FROM prod\n),\ntop AS (SELECT prod_id FROM ranked WHERE rn <= (n + 4) / 5),\nchg AS (\n  SELECT t.prod_id,\n    ABS(COALESCE(s2.share, 0) - COALESCE(s1.share, 0)) * 100 AS pp_change\n  FROM top t\n  LEFT JOIN ps s1 ON s1.prod_id = t.prod_id AND s1.q = 1772\n  LEFT JOIN ps s2 ON s2.prod_id = t.prod_id AND s2.q = 1776\n)\nSELECT c.prod_id, p.prod_name, c.pp_change\nFROM chg c LEFT JOIN products p ON p.prod_id = c.prod_id\nWHERE c.pp_change = (SELECT MIN(pp_change) FROM chg);",
+      "error": null,
+      "llm_calls": 9,
+      "input_tokens": 69394,
+      "output_tokens": 9144,
+      "cache_read_tokens": 5424,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 6470,
+          "out": 1532
+        },
+        "sql": {
+          "calls": 7,
+          "in": 60895,
+          "out": 6927
+        },
+        "validator": {
+          "calls": 1,
+          "in": 2029,
+          "out": 685
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 64.7,
+      "gold_ok": true
+    },
+    {
+      "id": "local170",
+      "db": "city_legislation",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "cannot_answer",
+      "sql": "SELECT id_bioguide, gender FROM legislators LIMIT 5",
+      "error": null,
+      "llm_calls": 7,
+      "input_tokens": 38317,
+      "output_tokens": 5654,
+      "cache_read_tokens": 5424,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 5221,
+          "out": 1225
+        },
+        "sql": {
+          "calls": 6,
+          "in": 33096,
+          "out": 4429
+        }
+      },
+      "security": [
+        "blocked: SELECT * would expose sensitive columns of 'legislators' (id_opensecrets); list the columns you need",
+        "blocked: SELECT * would expose sensitive columns of 'legislators' (id_opensecrets); list the columns you need",
+        "blocked: SELECT * would expose sensitive columns of 'legislators' (id_opensecrets); list the columns you need",
+        "blocked: SELECT * would expose sensitive columns of 'legislators' (id_opensecrets); list the columns you need"
+      ],
+      "review": "",
+      "seconds": 24.7,
+      "gold_ok": true
+    },
+    {
+      "id": "local253",
+      "db": "education_business",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH parsed AS (\n  SELECT CompanyName, Location,\n         CAST(REPLACE(REPLACE(REPLACE(TRIM(Salary), '\u20b9', ''), ',', ''), '/yr', '') AS REAL) AS sal\n  FROM SalaryDataset\n  WHERE Salary IS NOT NULL\n),\nclean AS (\n  SELECT * FROM parsed WHERE sal IS NOT NULL AND sal > 0\n),\ncomp AS (\n  SELECT Location, CompanyName, AVG(sal) AS avg_sal\n  FROM clean\n  WHERE Location IN ('Mumbai', 'Pune', 'New Delhi', 'Hyderabad')\n  GROUP BY Location, CompanyName\n),\nranked AS (\n  SELECT Location, CompanyName, avg_sal,\n         ROW_NUMBER() OVER (PARTITION BY Location ORDER BY avg_sal DESC) AS rn\n  FROM comp\n),\nnat AS (\n  SELECT AVG(sal) AS nat_avg FROM clean\n)\nSELECT r.Location AS Location,\n       r.CompanyName AS \"Company Name\",\n       ROUND(r.avg_sal, 2) AS \"Average Salary in State\",\n       ROUND(n.nat_avg, 2) AS \"Average Salary in Country\"\nFROM ranked r\nCROSS JOIN nat n\nWHERE r.rn <= 5\nORDER BY r.Location, r.avg_sal DESC",
+      "error": null,
+      "llm_calls": 6,
+      "input_tokens": 18864,
+      "output_tokens": 3216,
+      "cache_read_tokens": 7366,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 10289,
+          "out": 875
+        },
+        "sql": {
+          "calls": 3,
+          "in": 6642,
+          "out": 1684
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1933,
+          "out": 657
+        }
+      },
+      "security": [
+        "blocked: multiple statements in one call (stacked queries) are not allowed"
+      ],
+      "review": "APPROVE",
+      "seconds": 26.2,
+      "gold_ok": true
+    }
+  ]
+}

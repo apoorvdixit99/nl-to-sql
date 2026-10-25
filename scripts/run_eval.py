@@ -51,6 +51,15 @@ RUNNERS = {
 }
 
 
+def apply_overrides(pairs: list[str]) -> None:
+    """--set KEY=VALUE config overrides, typed like the current value."""
+    for kv in pairs:
+        key, val = kv.split("=", 1)
+        old = getattr(config, key)
+        setattr(config, key, val.lower() in ("1", "true", "yes") if isinstance(old, bool)
+                else type(old)(val))
+
+
 def check_gold(items: list[dict]) -> None:
     for item in items:
         results = gold_results(Database(item["db"]), item)
@@ -70,11 +79,7 @@ def main() -> None:
     p.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE",
                    help="override config for this run, e.g. --set FEW_SHOT=true VALUE_HINTS=false")
     args = p.parse_args()
-    for kv in args.set:
-        key, val = kv.split("=", 1)
-        old = getattr(config, key)
-        setattr(config, key, val.lower() in ("1", "true", "yes") if isinstance(old, bool)
-                else type(old)(val))
+    apply_overrides(args.set)
 
     items = load_dataset(args.db, args.ids)
     if args.check_gold:

@@ -25,10 +25,12 @@ def show_sql(sql: str, kind: str | None, style: str = "cyan") -> None:
     console.print(Panel(Syntax(sql, "sql", word_wrap=True), title=f"SQL ({kind})", border_style=style))
 
 
-def approve(sql: str, kind: str) -> bool:
+def approve(sql: str, kind: str, affected: int | None = None) -> bool:
     show_sql(sql, kind, style="yellow")
     label = "WRITE" if kind == "write" else "UNCLASSIFIED"
     console.print(f"[bold yellow]This is a {label} query and needs your approval.[/]")
+    if affected is not None:
+        console.print(f"[yellow]It would change {affected} row(s).[/]")
     return Confirm.ask("Run it?", default=False)
 
 
@@ -85,7 +87,7 @@ def ask_agent(agent: SQLAgent, question: str) -> None:
         out = agent.start(question)
     while isinstance(out, Pending):
         previewed = True
-        approved = approve(out.sql, out.kind)  # outside the spinner so the prompt isn't garbled
+        approved = approve(out.sql, out.kind, out.affected)  # outside the spinner so the prompt isn't garbled
         with console.status("Running..."):
             out = agent.resume(approved)
     render(out, sql_already_shown=previewed)

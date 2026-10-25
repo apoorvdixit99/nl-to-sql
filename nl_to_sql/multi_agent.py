@@ -316,7 +316,7 @@ class MultiAgentSQL(SQLAgent):
                 if out.status == "needs_approval":
                     # Writes: validator first, then the user. Later calls in this turn are skipped.
                     update["pending"] = {"sql": sql, "kind": out.kind, "call_id": call["id"],
-                                         "security": out.security}
+                                         "security": out.security, "affected": out.affected}
                     for rest in calls[i + 1:]:
                         update["messages"].append(ToolMessage(content="Skipped: an earlier statement is "
                                                               "awaiting approval.", tool_call_id=rest["id"]))
@@ -416,7 +416,7 @@ class MultiAgentSQL(SQLAgent):
 
     def _approval(self, state: MultiState) -> dict:
         p = state["pending"]
-        if interrupt({"sql": p["sql"], "kind": p["kind"]}):
+        if interrupt({"sql": p["sql"], "kind": p["kind"], "affected": p.get("affected")}):
             return {}
         return {"pending": None, "status": "declined", "sql": p["sql"], "kind": p["kind"],
                 "messages": [ToolMessage(content="The user declined to run this query.", tool_call_id=p["call_id"])]}

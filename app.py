@@ -159,7 +159,8 @@ def main() -> None:
         p: Pending = ss.pending
         with st.chat_message("assistant"):
             label = "write" if p.kind == "write" else "unclassified"
-            st.warning(f"This is a **{label}** query and needs your approval before it runs.")
+            st.warning(f"This is a **{label}** query and needs your approval before it runs."
+                       + (f" It would change **{p.affected}** row(s)." if p.affected is not None else ""))
             st.code(p.sql, language="sql")
             approve, decline = st.columns(2)
             if approve.button("Approve and run", type="primary", use_container_width=True):

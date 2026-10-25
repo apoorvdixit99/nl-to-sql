@@ -120,6 +120,7 @@ class Pending:
     """The run is paused waiting for the user to approve a query."""
     sql: str
     kind: str
+    affected: int | None = None   # v7: rows the write would change, counted before approval
 
 
 def _examples_block(db_name: str) -> str:
@@ -280,7 +281,7 @@ class SQLAgent:
             update.update(status="denied", sql=sql, kind=kind)
             return out.message
         if out.status == "needs_approval":
-            if not interrupt({"sql": sql, "kind": kind}):
+            if not interrupt({"sql": sql, "kind": kind, "affected": out.affected}):
                 update.update(status="declined", sql=sql, kind=kind)
                 return "The user declined to run this query."
             out = self.executor.run_write(sql, kind)
@@ -386,7 +387,7 @@ class SQLAgent:
             return Answer(question=self._question, status="error", error=f"{type(e).__name__}: {e}")
         if out.get("__interrupt__"):
             req = out["__interrupt__"][0].value
-            return Pending(sql=req["sql"], kind=req["kind"])
+            return Pending(sql=req["sql"], kind=req["kind"], affected=req.get("affected"))
         return self._to_answer(out)
 
     def _to_answer(self, state: dict) -> Answer:

@@ -58,14 +58,27 @@ class Database:
         parts = []
         with self.engine.connect() as conn:
             for t in tables:
-                table = Table(t, MetaData(), autoload_with=conn)
-                ddl = str(CreateTable(table).compile(self.engine)).strip()
+                ddl = self._ddl(conn, t)
                 res = conn.execute(text(f"SELECT * FROM {q(t)} LIMIT {config.SAMPLE_ROWS}"))
                 cols = list(res.keys())
                 rows = ["\t".join(str(v)[:100] for v in r) for r in res]
                 sample = f"/*\n{len(rows)} rows from {t} table:\n" + "\t".join(cols) + "\n" + "\n".join(rows) + "\n*/"
                 parts.append(f"{ddl}\n\n{sample}")
         return "\n\n".join(parts)
+
+    def _ddl(self, conn, table: str) -> str:
+        """The table's CREATE statement. SQLite keeps the original text (handles untyped columns)."""
+        if self.dialect == "sqlite":
+            row = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name = :n"),
+                               {"n": table}).first()
+            if row and row[0]:
+                return row[0].strip()
+        reflected = Table(table, MetaData(), autoload_with=conn)
+        try:
+            return str(CreateTable(reflected).compile(self.engine)).strip()
+        except Exception:  # e.g. columns of unknown type
+            cols = ", ".join(f"{c.name} {c.type if str(c.type) != 'NULL' else ''}".strip() for c in reflected.columns)
+            return f"CREATE TABLE {table} ({cols})"
 
     def compact_lines(self, hints: bool = False) -> dict[str, str]:
         """{table: one-line summary} with columns, types, PK and FK markers (cached).
@@ -160,8 +173,11 @@ class Database:
         prof: dict[str, dict[str, str]] = {}
         with self.engine.connect() as conn:
             for table in self.table_names():
-                t = q(table)
-                nrows = conn.execute(text(f"SELECT COUNT(*) FROM {t}")).scalar()
+                nrows = conn.execute(text(f"SELECT COUNT(*) FROM {q(table)}")).scalar()
+                # Big tables: profile a sample so start-up stays fast (hints are approximate there).
+                cap = config.PROFILE_SAMPLE_ROWS
+                t = q(table) if nrows <= cap else f"(SELECT * FROM {q(table)} LIMIT {cap}) AS _s"
+                nrows = min(nrows, cap)
                 label_done = False  # first text column of a small lookup table, e.g. CategoryName
                 for c in insp.get_columns(table):
                     col, typ = q(c["name"]), str(c["type"]).upper()

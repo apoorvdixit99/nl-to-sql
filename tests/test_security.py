@@ -122,3 +122,29 @@ def test_timeout_stops_runaway_query(tmp_path, monkeypatch):
     with pytest.raises(TimeoutError):
         db.execute_readonly("SELECT COUNT(*) FROM Track a, Track b, Track c")
     assert db.execute_readonly("SELECT COUNT(*) FROM Track").rows == [(3503,)]
+
+
+def test_tautological_where_on_writes_is_blocked(guard):
+    for sql in ("DELETE FROM Invoice WHERE 1 = 1", "UPDATE Customer SET Email = 'x' WHERE TRUE",
+                "DELETE FROM Invoice WHERE (1)"):
+        v = guard.check(sql)
+        assert not v.allowed and "always-true WHERE" in v.message(), sql
+
+
+def test_count_star_is_not_select_star(guard):
+    assert guard.check("SELECT COUNT(*) FROM Users WHERE Login = 'a'").allowed
+    assert not guard.check("SELECT u.* FROM Users u").allowed
+
+
+def test_blast_radius_blocks_disguised_mass_writes(tmp_path, monkeypatch):
+    import shutil
+    from nl_to_sql.db import Database
+    from nl_to_sql.executor import Executor
+    path = tmp_path / "c.db"
+    shutil.copy(config.ROOT / "data" / "chinook.db", path)
+    monkeypatch.setitem(config.DATABASES, "br", f"sqlite:///{path}")
+    ex = Executor(Database("br"))
+    out = ex.run("DELETE FROM Invoice WHERE InvoiceId > 0")      # syntax looks bounded; data says otherwise
+    assert out.status == "blocked" and "412 of 412" in out.message
+    out = ex.run("DELETE FROM Invoice WHERE InvoiceId = 7")
+    assert out.status == "needs_approval" and out.affected == 1

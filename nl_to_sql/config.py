@@ -102,3 +102,7 @@ SCHEMA_AGENT_MAX_CALLS = 3      # analyst exploration budget before it must hand
 MULTI_VALIDATOR = "always"      # multi: "always" | "flags" (only on red flags / security warnings) | "off"
 MULTI_VALIDATION_ROUNDS = 1     # how many times the validator may send a final query back
 MULTI_MAX_LLM_CALLS = 10        # all three agents together, per question
+
+PROFILE_SAMPLE_ROWS = 200_000  # value hints on bigger tables are computed from a sample
+BLAST_RADIUS_MIN_ROWS = 20      # tables smaller than this skip the blast-radius check
+MAX_WRITE_FRACTION = 0.5        # block UPDATE/DELETE that would change more than this share of a table

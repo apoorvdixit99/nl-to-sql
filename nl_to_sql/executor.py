@@ -21,6 +21,7 @@ class Outcome:
     result: QueryResult | None = None
     message: str = ""            # what the model is told
     security: list[str] = field(default_factory=list)
+    affected: int | None = None  # rows an UPDATE/DELETE would change (shown at approval)
 
 
 class Executor:
@@ -64,9 +65,42 @@ class Executor:
         except Exception as e:
             return Outcome("error", kind, message=f"Error (query not run): {e}\nFix the query and try again.",
                            security=security)
+        # Blast radius: count what an UPDATE/DELETE would touch before anyone approves it.
+        affected = self.affected_rows(sql)
+        if affected:
+            changed, total = affected
+            if total >= config.BLAST_RADIUS_MIN_ROWS and changed > total * config.MAX_WRITE_FRACTION:
+                why = (f"this would change {changed} of {total} rows (over "
+                       f"{config.MAX_WRITE_FRACTION:.0%}); narrow the WHERE clause")
+                return Outcome("blocked", kind, security=security + [f"blocked: {why}"],
+                               message=f"Blocked by the security policy, query not run: {why}.")
+            security = security + [f"info: would change {changed} of {total} rows"]
         if policy == "confirm":
-            return Outcome("needs_approval", kind, security=security)
+            return Outcome("needs_approval", kind, security=security, affected=affected[0] if affected else None)
         return self.run_write(sql, kind, security)
+
+    def affected_rows(self, sql: str) -> tuple[int, int] | None:
+        """(rows matched, rows in table) for a single-table UPDATE/DELETE, counted read-only."""
+        import sqlglot
+        from sqlglot import exp
+        try:
+            stmt = sqlglot.parse_one(sql, read=self.guard.dialect)
+        except Exception:
+            return None
+        if not isinstance(stmt, (exp.Update, exp.Delete)):
+            return None
+        table = stmt.this if isinstance(stmt, exp.Update) else stmt.find(exp.Table)
+        if not isinstance(table, exp.Table):
+            return None
+        name = table.sql(dialect=self.guard.dialect)
+        where = stmt.args.get("where")
+        cond = f" WHERE {where.this.sql(dialect=self.guard.dialect)}" if where else ""
+        try:
+            changed = self.db.execute_readonly(f"SELECT COUNT(*) FROM {name}{cond}").rows[0][0]
+            total = self.db.execute_readonly(f"SELECT COUNT(*) FROM {name}").rows[0][0]
+        except Exception:
+            return None
+        return int(changed), int(total)
 
     def run_write(self, sql: str, kind: str = "write", security: list[str] | None = None) -> Outcome:
         """Run an approved statement (an approved read still runs read-only)."""

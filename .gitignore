@@ -7,3 +7,5 @@ evals/*.log
 data/benchmarks/
 .cache/
 data/*.npy
+evals/logs/
+data/redteam.*

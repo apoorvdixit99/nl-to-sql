@@ -156,7 +156,11 @@ class SQLGuard:
         for col in stmt.find_all(exp.Column):
             if col.name and self._is_sensitive(col.name):
                 out.append(f"column '{col.name}' is sensitive and can't be queried")
-        if any(isinstance(s, exp.Star) for s in stmt.find_all(exp.Star)):
+        # Only a star in a select list exposes columns; COUNT(*) does not.
+        star_selected = any(
+            isinstance(e, exp.Star) or (isinstance(e, exp.Column) and isinstance(e.this, exp.Star))
+            for sel in stmt.find_all(exp.Select) for e in sel.expressions)
+        if star_selected:
             for t in used:
                 hidden = [c for c in self.tables[t] if self._is_sensitive(c)]
                 if hidden:
@@ -180,8 +184,13 @@ class SQLGuard:
 
         # Mass changes.
         for node in stmt.find_all(exp.Update, exp.Delete):
-            if not node.args.get("where") and not config.ALLOW_UNBOUNDED_WRITES:
+            if config.ALLOW_UNBOUNDED_WRITES:
+                break
+            where = node.args.get("where")
+            if not where:
                 out.append(f"{node.key.upper()} without a WHERE clause would change every row")
+            elif _tautology(where.this):  # WHERE 1=1 is the same thing in disguise
+                out.append(f"{node.key.upper()} with an always-true WHERE would change every row")
 
         # Cartesian products: comma joins or JOINs with no condition, and no WHERE at all.
         for select in stmt.find_all(exp.Select):

@@ -97,8 +97,8 @@ def test_declined_write_changes_nothing(db):
 
 
 def test_validator_can_stop_a_bad_write(db):
-    llm = ScriptedLLM(brief(["Artist"]), call("DELETE FROM Artist WHERE ArtistId > 0"),
-                      AIMessage(content="REJECT: deletes every artist, user asked for one"),
+    llm = ScriptedLLM(brief(["Artist"]), call("DELETE FROM Artist WHERE ArtistId = 1"),
+                      AIMessage(content="REJECT: the user meant the last artist added, not AC/DC"),
                       AIMessage(content="CANNOT_ANSWER: unclear which artist"))
     out = MultiAgentSQL(db, llm=llm).start("delete that artist")
     assert not isinstance(out, Pending) and out.status == "cannot_answer" and artist_count(db) == 275
@@ -167,3 +167,11 @@ def test_retrieve_mode_gives_analyst_candidates(monkeypatch):
     first = llm.seen[0][1]
     assert isinstance(first, HumanMessage) and "Candidate tables:" in first.content
     assert a.status == "ok" and a.result.rows == [(3503,)]
+
+
+def test_blast_radius_blocks_before_validator_or_user(db):
+    llm = ScriptedLLM(brief(["Artist"]), call("DELETE FROM Artist WHERE ArtistId > 0"),
+                      AIMessage(content="CANNOT_ANSWER: blocked"))
+    out = MultiAgentSQL(db, llm=llm).start("delete artists")
+    assert not isinstance(out, Pending) and artist_count(db) == 275
+    assert any("275 of 275" in s for s in out.security) and "validator" not in out.agents

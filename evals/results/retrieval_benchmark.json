@@ -1,0 +1,50 @@
+{
+  "spider": {
+    "questions": 200,
+    "dbs_with_descriptions": "0/20",
+    "bm25": {
+      "top3": 93.5,
+      "top5": 94.0
+    },
+    "vector": {
+      "top3": 98.5,
+      "top5": 100.0
+    },
+    "hybrid": {
+      "top3": 98.5,
+      "top5": 99.5
+    }
+  },
+  "bird": {
+    "questions": 200,
+    "dbs_with_descriptions": "11/11",
+    "bm25": {
+      "top3": 76.0,
+      "top5": 88.5
+    },
+    "vector": {
+      "top3": 72.0,
+      "top5": 86.5
+    },
+    "hybrid": {
+      "top3": 77.5,
+      "top5": 90.0
+    }
+  },
+  "spider2": {
+    "questions": 24,
+    "dbs_with_descriptions": "0/16",
+    "bm25": {
+      "top3": 41.7,
+      "top5": 45.8
+    },
+    "vector": {
+      "top3": 37.5,
+      "top5": 58.3
+    },
+    "hybrid": {
+      "top3": 37.5,
+      "top5": 45.8
+    }
+  }
+}
