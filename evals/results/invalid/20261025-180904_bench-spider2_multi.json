@@ -1,0 +1,866 @@
+{
+  "benchmark": "spider2",
+  "label": "multi",
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "architecture": "multi",
+  "n": 30,
+  "accuracy": 26.7,
+  "lenient_accuracy": 26.7,
+  "by_level": {},
+  "llm_calls": 65,
+  "calls_per_question": 2.17,
+  "input_tokens": 278636,
+  "cache_read_tokens": 62231,
+  "output_tokens": 51095,
+  "est_cost_usd": 0.0478,
+  "description_generation": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "est_cost_usd": 0.0
+  },
+  "statuses": {
+    "ok": 14,
+    "cannot_answer": 1,
+    "gave_up": 1,
+    "error": 14
+  },
+  "gold_missing": [],
+  "config": {
+    "retrieval": "hybrid",
+    "schema_mode": "auto",
+    "value_hints": true,
+    "descriptions_in_prompt": true,
+    "verify": "flags",
+    "schema_agent": "llm",
+    "multi_validator": "always"
+  },
+  "rows": [
+    {
+      "id": "local008",
+      "db": "Baseball",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH b AS (\n  SELECT COALESCE(p.name_given, p.name_first || ' ' || p.name_last) AS name,\n         CAST(NULLIF(bt.g, '') AS INTEGER) AS g,\n         CAST(NULLIF(bt.r, '') AS INTEGER) AS r,\n         CAST(NULLIF(bt.h, '') AS INTEGER) AS h,\n         CAST(NULLIF(bt.hr, '') AS INTEGER) AS hr\n  FROM batting bt JOIN player p ON bt.player_id = p.player_id\n),\nm AS (\n  SELECT MAX(g) AS mg, MAX(r) AS mr, MAX(h) AS mh, MAX(hr) AS mhr FROM b\n)\nSELECT 'games played' AS stat, name, g AS value FROM b, m WHERE g = mg\nUNION ALL\nSELECT 'runs', name, r FROM b, m WHERE r = mr\nUNION ALL\nSELECT 'hits', name, h FROM b, m WHERE h = mh\nUNION ALL\nSELECT 'home runs', name, hr FROM b, m WHERE hr = mhr;",
+      "error": null,
+      "llm_calls": 6,
+      "input_tokens": 25716,
+      "output_tokens": 4361,
+      "cache_read_tokens": 2916,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 9065,
+          "out": 675
+        },
+        "sql": {
+          "calls": 4,
+          "in": 15457,
+          "out": 2892
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1194,
+          "out": 794
+        }
+      },
+      "security": [],
+      "review": "The query returns 15448 rows when each stat should have only a few tied winners, and the `value` column is blank for the runs rows, which suggests the join fans out (the `player` table may have duplicate `player_id` values) and the outer comparison is not matching what you intend. Fix it by confirming `player.player_id` is unique (or joining to a deduplicated player subquery), computing the maxima from the same CTE `b` instead of the raw `batting` table, and returning one row per stat with `stat`, `name`, and `value`. Also decide whether the output should be single-season maxima (current default) or career totals, since the brief leaves this open.",
+      "seconds": 24.0,
+      "gold_ok": true
+    },
+    {
+      "id": "local015",
+      "db": "California_Traffic_Collision",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH hu AS (\n  SELECT DISTINCT p.case_id FROM parties p\n  JOIN collisions c ON c.case_id = p.case_id\n  WHERE c.motorcycle_collision = 1\n    AND (p.party_safety_equipment_1 IN ('driver, motorcycle helmet used','passenger, motorcycle helmet used')\n         OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used','passenger, motorcycle helmet used'))\n),\nhn AS (\n  SELECT DISTINCT p.case_id FROM parties p\n  JOIN collisions c ON c.case_id = p.case_id\n  WHERE c.motorcycle_collision = 1\n    AND (p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used','passenger, motorcycle helmet not used')\n         OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used','passenger, motorcycle helmet not used'))\n)\nSELECT 'helmet used' AS helmet_group,\n       ROUND(100.0 * SUM(COALESCE(c.motorcyclist_killed_count, 0)) / COUNT(*), 2) AS motorcyclist_fatality_percent\nFROM hu JOIN collisions c ON c.case_id = hu.case_id\nUNION ALL\nSELECT 'helmet not used',\n       ROUND(100.0 * SUM(COALESCE(c.motorcyclist_killed_count, 0)) / COUNT(*), 2)\nFROM hn JOIN collisions c ON c.case_id = hn.case_id;",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 22249,
+      "output_tokens": 3641,
+      "cache_read_tokens": 7331,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 14043,
+          "out": 1350
+        },
+        "sql": {
+          "calls": 1,
+          "in": 6428,
+          "out": 1676
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1778,
+          "out": 615
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 16.8,
+      "gold_ok": true
+    },
+    {
+      "id": "local017",
+      "db": "California_Traffic_Collision",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "cannot_answer",
+      "sql": "WITH dup AS (SELECT case_id FROM case_ids GROUP BY case_id HAVING COUNT(*) > 1), counts AS (SELECT c.db_year, k.primary_collision_factor AS pcf, COUNT(*) AS n FROM collisions k JOIN case_ids c ON k.case_id = c.case_id WHERE k.primary_collision_factor IS NOT NULL AND c.case_id NOT IN (SELECT case_id FROM dup) GROUP BY c.db_year, k.primary_collision_factor), ranked AS (SELECT db_year, pcf, n, ROW_NUMBER() OVER (PARTITION BY db_year ORDER BY n DESC, pcf) AS rk FROM counts) SELECT db_year, pcf AS primary_collision_factor, n AS collision_count, rk FROM ranked WHERE rk <= 2 ORDER BY db_year, rk",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 24463,
+      "output_tokens": 3568,
+      "cache_read_tokens": 9275,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 6462,
+          "out": 783
+        },
+        "sql": {
+          "calls": 3,
+          "in": 16880,
+          "out": 2164
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1121,
+          "out": 621
+        }
+      },
+      "security": [],
+      "review": "The query does not answer the question. It returns each year's top two causes, but never compares the years' top-two sets to identify the one that differs, so the answer year is not returned. Add a step that compares each year's top-two set to the others and returns only the year whose set differs. The output also includes an extra `rk` column that the question does not request, so remove it. Finally, decide and document how ties at rank 2 are handled, and state explicitly that the `unknown` category is kept, since the query currently includes it only implicitly.",
+      "seconds": 18.8,
+      "gold_ok": true
+    },
+    {
+      "id": "local020",
+      "db": "IPL",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH bat AS (\n  SELECT b.bowler AS pid, SUM(s.runs_scored) AS runs\n  FROM ball_by_ball b\n  JOIN batsman_scored s ON s.match_id = b.match_id AND s.over_id = b.over_id\n    AND s.ball_id = b.ball_id AND s.innings_no = b.innings_no\n  GROUP BY b.bowler\n),\next AS (\n  SELECT b.bowler AS pid, SUM(e.extra_runs) AS runs\n  FROM ball_by_ball b\n  JOIN extra_runs e ON e.match_id = b.match_id AND e.over_id = b.over_id\n    AND e.ball_id = b.ball_id AND e.innings_no = b.innings_no\n  WHERE e.extra_type NOT IN ('byes', 'legbyes')\n  GROUP BY b.bowler\n),\nwk AS (\n  SELECT b.bowler AS pid, COUNT(*) AS w\n  FROM ball_by_ball b\n  JOIN wicket_taken t ON t.match_id = b.match_id AND t.over_id = b.over_id\n    AND t.ball_id = b.ball_id AND t.innings_no = b.innings_no\n  WHERE t.kind_out NOT IN ('run out', 'retired hurt', 'obstructing the field')\n  GROUP BY b.bowler\n),\nranked AS (\n  SELECT p.player_name AS player_name,\n         (COALESCE(bat.runs, 0) + COALESCE(ext.runs, 0)) * 1.0 / wk.w AS bowling_average\n  FROM wk\n  JOIN player p ON p.player_id = wk.pid\n  LEFT JOIN bat ON bat.pid = wk.pid\n  LEFT JOIN ext ON ext.pid = wk.pid\n  WHERE wk.w >= 10\n)\nSELECT player_name, bowling_average\nFROM ranked\nWHERE bowling_average = (SELECT MIN(bowling_average) FROM ranked);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 8845,
+      "output_tokens": 4122,
+      "cache_read_tokens": 972,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3220,
+          "out": 1508
+        },
+        "sql": {
+          "calls": 1,
+          "in": 3476,
+          "out": 1948
+        },
+        "validator": {
+          "calls": 1,
+          "in": 2149,
+          "out": 666
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 17.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local022",
+      "db": "IPL",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT p.player_name\nFROM (\n    SELECT bb.striker AS player_id, bb.match_id, SUM(bs.runs_scored) AS total_runs\n    FROM batsman_scored bs\n    JOIN ball_by_ball bb\n      ON bs.match_id = bb.match_id\n     AND bs.over_id = bb.over_id\n     AND bs.ball_id = bb.ball_id\n     AND bs.innings_no = bb.innings_no\n    GROUP BY bb.striker, bb.match_id\n) t\nJOIN player_match pm ON pm.match_id = t.match_id AND pm.player_id = t.player_id\nJOIN match m ON m.match_id = t.match_id\nJOIN player p ON p.player_id = t.player_id\nWHERE m.match_winner IS NOT NULL\n  AND pm.team_id <> m.match_winner\n  AND t.total_runs >= 100\nORDER BY p.player_name;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7750,
+      "output_tokens": 2325,
+      "cache_read_tokens": 4092,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3234,
+          "out": 1195
+        },
+        "sql": {
+          "calls": 1,
+          "in": 3101,
+          "out": 835
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1415,
+          "out": 295
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 11.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local023",
+      "db": "IPL",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT p.player_name,\n       ROUND(SUM(bs.runs_scored) * 1.0 / COUNT(DISTINCT bb.match_id), 2) AS batting_average\nFROM batsman_scored bs\nJOIN ball_by_ball bb\n  ON bs.match_id = bb.match_id\n AND bs.over_id = bb.over_id\n AND bs.ball_id = bb.ball_id\n AND bs.innings_no = bb.innings_no\nJOIN match m ON bb.match_id = m.match_id\nJOIN player p ON bb.striker = p.player_id\nWHERE m.season_id = 5\nGROUP BY p.player_id, p.player_name\nORDER BY batting_average DESC\nLIMIT 5;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7500,
+      "output_tokens": 2453,
+      "cache_read_tokens": 4092,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3234,
+          "out": 1355
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2934,
+          "out": 700
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1332,
+          "out": 398
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 12.0,
+      "gold_ok": true
+    },
+    {
+      "id": "local026",
+      "db": "IPL",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH bowl AS (\n  SELECT DISTINCT match_id, innings_no, over_id, bowler FROM ball_by_ball\n),\nover_runs AS (\n  SELECT b.match_id, b.innings_no, b.over_id, b.bowler,\n    COALESCE((SELECT SUM(bs.runs_scored) FROM batsman_scored bs\n              WHERE bs.match_id = b.match_id AND bs.innings_no = b.innings_no AND bs.over_id = b.over_id), 0)\n    + COALESCE((SELECT SUM(er.extra_runs) FROM extra_runs er\n              WHERE er.match_id = b.match_id AND er.innings_no = b.innings_no AND er.over_id = b.over_id\n                AND er.extra_type NOT IN ('byes', 'legbyes')), 0) AS total\n  FROM bowl b\n),\nmatch_max AS (\n  SELECT match_id, MAX(total) AS mx FROM over_runs GROUP BY match_id\n),\ntop_overs AS (\n  SELECT o.* FROM over_runs o\n  JOIN match_max m ON o.match_id = m.match_id AND o.total = m.mx\n)\nSELECT bowler, match_id, innings_no, over_id, total AS runs_conceded\nFROM top_overs\nORDER BY runs_conceded DESC, match_id, innings_no, over_id\nLIMIT 3;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7611,
+      "output_tokens": 3457,
+      "cache_read_tokens": 4092,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3327,
+          "out": 1181
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2603,
+          "out": 1538
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1681,
+          "out": 738
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 16.6,
+      "gold_ok": true
+    },
+    {
+      "id": "local028",
+      "db": "Brazilian_E_Commerce",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH months(m) AS (\n  SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6\n  UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12\n),\ndelivered AS (\n  SELECT DISTINCT order_id,\n         CAST(substr(order_purchase_timestamp, 1, 4) AS INTEGER) AS yr,\n         CAST(substr(order_purchase_timestamp, 6, 2) AS INTEGER) AS mo\n  FROM olist_orders\n  WHERE order_status = 'delivered'\n)\nSELECT m AS month,\n       COUNT(DISTINCT CASE WHEN yr = 2016 THEN order_id END) AS \"2016\",\n       COUNT(DISTINCT CASE WHEN yr = 2017 THEN order_id END) AS \"2017\",\n       COUNT(DISTINCT CASE WHEN yr = 2018 THEN order_id END) AS \"2018\"\nFROM months\nLEFT JOIN delivered ON delivered.mo = months.m\nGROUP BY m\nORDER BY m",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 8420,
+      "output_tokens": 1991,
+      "cache_read_tokens": 1944,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3240,
+          "out": 702
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3850,
+          "out": 849
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1330,
+          "out": 440
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 11.3,
+      "gold_ok": true
+    },
+    {
+      "id": "local037",
+      "db": "Brazilian_E_Commerce",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH cat_pay AS (\n  SELECT t.product_category_name_english AS category,\n         p.payment_type AS payment_type,\n         COUNT(DISTINCT p.order_id || '|' || p.payment_sequential) AS payments\n  FROM olist_order_payments p\n  JOIN olist_order_items i ON i.order_id = p.order_id\n  JOIN olist_products pr ON pr.product_id = i.product_id\n  JOIN product_category_name_translation t ON t.product_category_name = pr.product_category_name\n  GROUP BY 1, 2\n),\nranked AS (\n  SELECT category, payment_type, payments,\n         ROW_NUMBER() OVER (PARTITION BY category ORDER BY payments DESC, payment_type ASC) AS rn\n  FROM cat_pay\n)\nSELECT category AS product_category_name_english, payment_type, payments\nFROM ranked\nWHERE rn = 1\nORDER BY payments DESC, category ASC\nLIMIT 3;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7044,
+      "output_tokens": 2614,
+      "cache_read_tokens": 4081,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3238,
+          "out": 977
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2443,
+          "out": 1160
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1363,
+          "out": 477
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 14.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local039",
+      "db": "Pagila",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH t AS (\n  SELECT c.name AS name,\n         SUM((julianday(r.return_date) - julianday(r.rental_date)) * 24) AS total_hours\n  FROM rental r\n  JOIN inventory i ON r.inventory_id = i.inventory_id\n  JOIN film f ON i.film_id = f.film_id\n  JOIN film_category fc ON f.film_id = fc.film_id\n  JOIN category c ON fc.category_id = c.category_id\n  JOIN customer cu ON r.customer_id = cu.customer_id\n  JOIN address a ON cu.address_id = a.address_id\n  JOIN city ci ON a.city_id = ci.city_id\n  WHERE r.return_date IS NOT NULL\n    AND (ci.city LIKE 'A%' OR ci.city LIKE '%-%')\n  GROUP BY c.name\n)\nSELECT name, total_hours\nFROM t\nWHERE total_hours = (SELECT MAX(total_hours) FROM t);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 8767,
+      "output_tokens": 2021,
+      "cache_read_tokens": 972,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 4171,
+          "out": 872
+        },
+        "sql": {
+          "calls": 1,
+          "in": 3347,
+          "out": 923
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1249,
+          "out": 226
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.8,
+      "gold_ok": true
+    },
+    {
+      "id": "local040",
+      "db": "modern_data",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT t.boroname, COUNT(*) AS tree_count, AVG(i.Estimate_Mean_income) AS avg_mean_income FROM trees t JOIN income_trees i ON t.zipcode = i.zipcode WHERE i.Estimate_Median_income > 0 AND i.Estimate_Mean_income > 0 AND t.boroname IN ('Bronx','Brooklyn','Manhattan','Queens','Staten Island') GROUP BY t.boroname ORDER BY tree_count DESC LIMIT 3",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7860,
+      "output_tokens": 1817,
+      "cache_read_tokens": 972,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 4363,
+          "out": 1083
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2374,
+          "out": 293
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1123,
+          "out": 441
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 10.5,
+      "gold_ok": true
+    },
+    {
+      "id": "local049",
+      "db": "modern_data",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH top_industry AS (\n  SELECT industry\n  FROM companies_industries\n  GROUP BY industry\n  ORDER BY COUNT(DISTINCT company_id) DESC\n  LIMIT 1\n)\nSELECT COUNT(DISTINCT d.company_id) * 1.0 / 3 AS avg_new_unicorns_per_year\nFROM companies_dates d\nJOIN companies_industries i ON i.company_id = d.company_id\nWHERE i.industry = (SELECT industry FROM top_industry)\n  AND strftime('%Y', d.date_joined) IN ('2019', '2020', '2021');",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7020,
+      "output_tokens": 1629,
+      "cache_read_tokens": 5156,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 4299,
+          "out": 741
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1707,
+          "out": 634
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1014,
+          "out": 254
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.6,
+      "gold_ok": true
+    },
+    {
+      "id": "local063",
+      "db": "complex_oracle",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "gave_up",
+      "sql": "WITH s AS (\n  SELECT s.prod_id, c.cust_city, t.calendar_quarter_id AS q, s.amount_sold\n  FROM sales s JOIN customers c ON c.cust_id = s.cust_id JOIN times t ON t.time_id = s.time_id\n  WHERE c.country_id = 52790 AND s.promo_id = 999 AND t.calendar_quarter_id IN (1772, 1776)\n),\ncity AS (\n  SELECT cust_city FROM s GROUP BY cust_city\n  HAVING SUM(CASE WHEN q = 1772 THEN amount_sold ELSE 0 END) > 0\n     AND SUM(CASE WHEN q = 1776 THEN amount_sold ELSE 0 END) >= 1.2 * SUM(CASE WHEN q = 1772 THEN amount_sold ELSE 0 END)\n),\nf AS (SELECT s.* FROM s JOIN city USING (cust_city)),\ntt AS (SELECT SUM(CASE WHEN q = 1772 THEN amount_sold ELSE 0 END) AS t19, SUM(CASE WHEN q = 1776 THEN amount_sold ELSE 0 END) AS t20 FROM f),\npq AS (SELECT prod_id,\n   SUM(CASE WHEN q = 1772 THEN amount_sold ELSE 0 END) AS a,\n   SUM(CASE WHEN q = 1776 THEN amount_sold ELSE 0 END) AS b,\n   SUM(amount_sold) AS total\n  FROM f GROUP BY prod_id),\nranked AS (SELECT prod_id, a, b, total, ROW_NUMBER() OVER (ORDER BY total DESC) AS rn, COUNT(*) OVER () AS n FROM pq),\ntop AS (SELECT r.* FROM ranked r WHERE r.rn <= 0.2 * r.n),\nchg AS (\n  SELECT top.prod_id, 100.0 * top.b / tt.t20 - 100.0 * top.a / tt.t19 AS d\n  FROM top CROSS JOIN tt\n)\nSELECT p.prod_name\nFROM chg JOIN products p ON p.prod_id = chg.prod_id\nWHERE ABS(chg.d) = (SELECT MIN(ABS(d)) FROM chg);",
+      "error": "Stopped after 10 model calls without a final answer.",
+      "llm_calls": 10,
+      "input_tokens": 97508,
+      "output_tokens": 7903,
+      "cache_read_tokens": 8748,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 6470,
+          "out": 860
+        },
+        "sql": {
+          "calls": 9,
+          "in": 91038,
+          "out": 7043
+        }
+      },
+      "security": [
+        "warning: join without a condition (possible cartesian product)"
+      ],
+      "review": "",
+      "seconds": 70.0,
+      "gold_ok": true
+    },
+    {
+      "id": "local099",
+      "db": "Db-IMDB",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH yash AS (\n  SELECT DISTINCT TRIM(p.PID) AS pid FROM Person p WHERE TRIM(p.Name) = 'Yash Chopra'\n),\nyf AS (\n  SELECT DISTINCT TRIM(d.MID) AS MID FROM M_Director d WHERE TRIM(d.PID) IN (SELECT pid FROM yash)\n),\nac AS (\n  SELECT DISTINCT TRIM(c.PID) AS apid, TRIM(c.MID) AS MID FROM M_Cast c\n),\ndir AS (\n  SELECT DISTINCT TRIM(d.MID) AS MID, TRIM(d.PID) AS dpid FROM M_Director d\n),\nyc AS (\n  SELECT ac.apid, COUNT(DISTINCT ac.MID) AS yc\n  FROM ac JOIN yf ON ac.MID = yf.MID\n  GROUP BY ac.apid\n),\noc AS (\n  SELECT ac.apid, dir.dpid, COUNT(DISTINCT ac.MID) AS n\n  FROM ac JOIN dir ON ac.MID = dir.MID\n  WHERE dir.dpid NOT IN (SELECT pid FROM yash)\n  GROUP BY ac.apid, dir.dpid\n),\nom AS (\n  SELECT apid, MAX(n) AS mx FROM oc GROUP BY apid\n)\nSELECT COUNT(*) AS actor_count\nFROM yc LEFT JOIN om ON yc.apid = om.apid\nWHERE yc.yc > COALESCE(om.mx, 0);",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 9903,
+      "output_tokens": 3025,
+      "cache_read_tokens": 3700,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 5983,
+          "out": 1153
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2351,
+          "out": 1435
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1569,
+          "out": 437
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 15.4,
+      "gold_ok": true
+    },
+    {
+      "id": "local133",
+      "db": "EntertainmentAgency",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH scores AS (\n  SELECT ms.StyleName AS StyleName,\n         SUM(CASE mp.PreferenceSeq WHEN 1 THEN 3 WHEN 2 THEN 2 WHEN 3 THEN 1 ELSE 0 END) AS total_score\n  FROM Musical_Preferences mp\n  JOIN Musical_Styles ms ON mp.StyleID = ms.StyleID\n  GROUP BY mp.StyleID, ms.StyleName\n),\navg_s AS (\n  SELECT AVG(total_score) AS avg_score FROM scores\n)\nSELECT s.StyleName,\n       ABS(s.total_score - a.avg_score) AS abs_difference\nFROM scores s\nCROSS JOIN avg_s a\nORDER BY s.StyleName;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 7224,
+      "output_tokens": 1803,
+      "cache_read_tokens": 972,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3810,
+          "out": 821
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1943,
+          "out": 379
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1471,
+          "out": 603
+        }
+      },
+      "security": [
+        "warning: join without a condition (possible cartesian product)"
+      ],
+      "review": "APPROVE",
+      "seconds": 9.6,
+      "gold_ok": true
+    },
+    {
+      "id": "local141",
+      "db": "AdventureWorks",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "WITH s AS (\n  SELECT salespersonid AS sp, strftime('%Y', orderdate) AS yr, SUM(totaldue) AS sales\n  FROM salesorderheader\n  WHERE salespersonid IS NOT NULL\n  GROUP BY salespersonid, strftime('%Y', orderdate)\n),\nq AS (\n  SELECT BusinessEntityID AS sp, strftime('%Y', QuotaDate) AS yr, SUM(SalesQuota) AS quota\n  FROM SalesPersonQuotaHistory\n  GROUP BY BusinessEntityID, strftime('%Y', QuotaDate)\n),\nk AS (\n  SELECT sp, yr FROM s\n  UNION\n  SELECT sp, yr FROM q\n)\nSELECT k.sp AS BusinessEntityID,\n       k.yr AS Year,\n       COALESCE(s.sales, 0) - COALESCE(q.quota, 0) AS Difference\nFROM k\nLEFT JOIN s ON s.sp = k.sp AND s.yr = k.yr\nLEFT JOIN q ON q.sp = k.sp AND q.yr = k.yr\nORDER BY k.sp, k.yr;",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 20756,
+      "output_tokens": 4365,
+      "cache_read_tokens": 2916,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 5610,
+          "out": 1333
+        },
+        "sql": {
+          "calls": 3,
+          "in": 13460,
+          "out": 2148
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1686,
+          "out": 884
+        }
+      },
+      "security": [],
+      "review": "Rows where a salesperson-year has quota but no sales (or sales but no quota) return NULL for Difference, because `s.sales - q.quota` is NULL when either side is missing. A year with quota but no sales should show `-quota`, not NULL. Fix the final SELECT to `COALESCE(s.sales, 0) - COALESCE(q.quota, 0) AS Difference`, or add a note explaining the NULLs for missing-side rows. Also state in the answer that 2014 covers only partial quota periods (through 2014-03), and confirm the STATUS filter (the brief says to check it, and the SQL does not apply or verify it).",
+      "seconds": 20.8,
+      "gold_ok": true
+    },
+    {
+      "id": "local152",
+      "db": "imdb_movies",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieGuhVfrN915ruFxPS'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local170",
+      "db": "city_legislation",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieHfbQV3SSfQNs2G87'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local171",
+      "db": "city_legislation",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieJE5amDaj75gpBD5t'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local212",
+      "db": "delivery_center",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieJv16GivagwiGKafn'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local230",
+      "db": "imdb_movies",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieKTVCo4Lea4UPqaXT'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local253",
+      "db": "education_business",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieLYE3jKBvqzfNdnP1'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.2,
+      "gold_ok": true
+    },
+    {
+      "id": "local263",
+      "db": "stacking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieMS3tofpCwWpPeAar'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local272",
+      "db": "oracle_sql",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieNR69GPYHhdFoYkNg'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local279",
+      "db": "oracle_sql",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieP9FUs2Bo5zyNeZDQ'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.2,
+      "gold_ok": true
+    },
+    {
+      "id": "local284",
+      "db": "bank_sales_trading",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieQ8XDLSZGe8Bmqgme'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local298",
+      "db": "bank_sales_trading",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieQfXX5m7QcFr9uxg1'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local299",
+      "db": "bank_sales_trading",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieRGjewXt2fY5me8zR'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local300",
+      "db": "bank_sales_trading",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieRriEqd997UM5DqZU'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    },
+    {
+      "id": "local330",
+      "db": "log",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "error",
+      "sql": null,
+      "error": "AnthropicInvalidRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CgPieSyS92JtALC6XkBW1'}",
+      "llm_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "agents": {},
+      "security": [],
+      "review": "",
+      "seconds": 0.1,
+      "gold_ok": true
+    }
+  ]
+}

@@ -106,3 +106,9 @@ MULTI_MAX_LLM_CALLS = 10        # all three agents together, per question
 PROFILE_SAMPLE_ROWS = 200_000  # value hints on bigger tables are computed from a sample
 BLAST_RADIUS_MIN_ROWS = 20      # tables smaller than this skip the blast-radius check
 MAX_WRITE_FRACTION = 0.5        # block UPDATE/DELETE that would change more than this share of a table
+
+# --- Answer shape (v7) ---
+# "exact": only the columns asked for, in the order asked, duplicates kept unless the question asks
+#          for distinct values (what Spider/BIRD expect, and cleaner for users).
+# "helpful": the model may add context columns (IDs next to names, the value used for ranking).
+ANSWER_STYLE = "helpful"     # "exact" is expected to help on Spider/BIRD but is not yet measured (see STAGES v7)

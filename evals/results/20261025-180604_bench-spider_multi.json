@@ -1,0 +1,3525 @@
+{
+  "benchmark": "spider",
+  "label": "multi",
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "architecture": "multi",
+  "n": 100,
+  "accuracy": 63.0,
+  "lenient_accuracy": 68.0,
+  "by_level": {},
+  "llm_calls": 322,
+  "calls_per_question": 3.22,
+  "input_tokens": 498618,
+  "cache_read_tokens": 287210,
+  "output_tokens": 98098,
+  "est_cost_usd": 0.0731,
+  "description_generation": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "est_cost_usd": 0.0
+  },
+  "statuses": {
+    "ok": 100
+  },
+  "gold_missing": [],
+  "config": {
+    "retrieval": "hybrid",
+    "schema_mode": "auto",
+    "value_hints": true,
+    "descriptions_in_prompt": true,
+    "verify": "flags",
+    "schema_agent": "llm",
+    "multi_validator": "always"
+  },
+  "rows": [
+    {
+      "id": "spider-0047",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT weight FROM Pets WHERE PetType = 'dog' AND pet_age IS NOT NULL AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog' AND pet_age IS NOT NULL);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3638,
+      "output_tokens": 805,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1645,
+          "out": 461
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1353,
+          "out": 337
+        },
+        "validator": {
+          "calls": 1,
+          "in": 640,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0050",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT PetType, MAX(weight) AS max_weight FROM Pets WHERE PetType IN ('cat', 'dog') GROUP BY PetType;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3543,
+      "output_tokens": 449,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1648,
+          "out": 318
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1315,
+          "out": 124
+        },
+        "validator": {
+          "calls": 1,
+          "in": 580,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0060",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT s.Fname\nFROM Student s\nJOIN Has_Pet hp ON hp.StuID = s.StuID\nJOIN Pets p ON p.PetID = hp.PetID\nWHERE p.PetType IN ('cat', 'dog')\nGROUP BY s.StuID\nHAVING COUNT(DISTINCT p.PetType) = 2;",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 11367,
+      "output_tokens": 1743,
+      "cache_read_tokens": 5169,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1652,
+          "out": 622
+        },
+        "sql": {
+          "calls": 4,
+          "in": 9715,
+          "out": 1121
+        }
+      },
+      "security": [],
+      "review": "",
+      "seconds": 9.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0061",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Major, Age FROM Student WHERE StuID NOT IN (SELECT hp.StuID FROM Has_Pet hp JOIN Pets p ON hp.PetID = p.PetID WHERE p.PetType = 'cat')",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4281,
+      "output_tokens": 1173,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1650,
+          "out": 642
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1800,
+          "out": 203
+        },
+        "validator": {
+          "calls": 1,
+          "in": 831,
+          "out": 328
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0063",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT StuID FROM Student WHERE StuID NOT IN (SELECT Has_Pet.StuID FROM Has_Pet JOIN Pets ON Has_Pet.PetID = Pets.PetID WHERE Pets.PetType = 'cat' AND Has_Pet.StuID IS NOT NULL) ORDER BY StuID;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4383,
+      "output_tokens": 1015,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1648,
+          "out": 630
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1849,
+          "out": 235
+        },
+        "validator": {
+          "calls": 1,
+          "in": 886,
+          "out": 150
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0064",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT StuID FROM Student WHERE StuID NOT IN (SELECT hp.StuID FROM Has_Pet hp JOIN Pets p ON hp.PetID = p.PetID WHERE p.PetType = 'cat' AND hp.StuID IS NOT NULL) ORDER BY StuID;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4232,
+      "output_tokens": 1493,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1650,
+          "out": 715
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1779,
+          "out": 363
+        },
+        "validator": {
+          "calls": 1,
+          "in": 803,
+          "out": 415
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0071",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age FROM Pets WHERE PetType IN ('cat', 'dog') GROUP BY PetType;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3620,
+      "output_tokens": 597,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1648,
+          "out": 400
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1341,
+          "out": 190
+        },
+        "validator": {
+          "calls": 1,
+          "in": 631,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0074",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT PetType, AVG(weight) AS average_weight FROM Pets WHERE PetType IN ('cat', 'dog') GROUP BY PetType;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3562,
+      "output_tokens": 493,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1645,
+          "out": 330
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1324,
+          "out": 156
+        },
+        "validator": {
+          "calls": 1,
+          "in": 593,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0076",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT s.Fname, s.Age FROM Student s INNER JOIN Has_Pet h ON h.StuID = s.StuID",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3811,
+      "output_tokens": 591,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1650,
+          "out": 430
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1558,
+          "out": 154
+        },
+        "validator": {
+          "calls": 1,
+          "in": 603,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0083",
+      "db": "pets_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT s.LName FROM Student s JOIN Has_Pet hp ON hp.StuID = s.StuID JOIN Pets p ON p.PetID = hp.PetID WHERE p.PetType = 'cat' AND p.pet_age = 3;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4058,
+      "output_tokens": 671,
+      "cache_read_tokens": 2457,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1651,
+          "out": 405
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1720,
+          "out": 259
+        },
+        "validator": {
+          "calls": 1,
+          "in": 687,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0092",
+      "db": "car_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS country_count FROM countries;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3814,
+      "output_tokens": 552,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2026,
+          "out": 361
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1285,
+          "out": 184
+        },
+        "validator": {
+          "calls": 1,
+          "in": 503,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0098",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT cn.Model FROM cars_data cd JOIN car_names cn ON cd.Id = cn.MakeId WHERE cd.Weight < (SELECT AVG(Weight) FROM cars_data) LIMIT 50",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4555,
+      "output_tokens": 1120,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2037,
+          "out": 698
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1729,
+          "out": 196
+        },
+        "validator": {
+          "calls": 1,
+          "in": 789,
+          "out": 226
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0099",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT cm.FullName FROM car_makers cm JOIN model_list ml ON ml.Maker = cm.Id JOIN car_names cn ON cn.Model = ml.Model JOIN cars_data cd ON cd.Id = cn.MakeId WHERE cd.Year = 1970;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4918,
+      "output_tokens": 1296,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2041,
+          "out": 649
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2024,
+          "out": 230
+        },
+        "validator": {
+          "calls": 1,
+          "in": 853,
+          "out": 417
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0105",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT co.Continent AS continent, COUNT(cm.Id) AS car_maker_count FROM continents co LEFT JOIN countries c ON c.Continent = co.ContId LEFT JOIN car_makers cm ON cm.Country = c.CountryId GROUP BY co.ContId, co.Continent ORDER BY co.Continent;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4349,
+      "output_tokens": 1333,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2040,
+          "out": 557
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1594,
+          "out": 467
+        },
+        "validator": {
+          "calls": 1,
+          "in": 715,
+          "out": 309
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0118",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT AVG(CAST(MPG AS REAL)) AS avg_mpg FROM cars_data WHERE Cylinders = 4 AND MPG <> 'null' AND MPG IS NOT NULL;",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 8644,
+      "output_tokens": 1990,
+      "cache_read_tokens": 4652,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2043,
+          "out": 533
+        },
+        "sql": {
+          "calls": 3,
+          "in": 5968,
+          "out": 1113
+        },
+        "validator": {
+          "calls": 1,
+          "in": 633,
+          "out": 344
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 11.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0120",
+      "db": "car_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT MIN(Weight) AS min_weight FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4168,
+      "output_tokens": 588,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2047,
+          "out": 421
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1504,
+          "out": 160
+        },
+        "validator": {
+          "calls": 1,
+          "in": 617,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0126",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS num_cars FROM cars_data WHERE CAST(Horsepower AS REAL) > 150;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4262,
+      "output_tokens": 853,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2038,
+          "out": 555
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1556,
+          "out": 163
+        },
+        "validator": {
+          "calls": 1,
+          "in": 668,
+          "out": 135
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0136",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT AVG(CAST(Horsepower AS REAL)) AS avg_horsepower FROM cars_data WHERE Year < 1980 AND Horsepower GLOB '[0-9]*' AND Horsepower NOT GLOB '*[^0-9.]*';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4235,
+      "output_tokens": 890,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2040,
+          "out": 490
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1513,
+          "out": 195
+        },
+        "validator": {
+          "calls": 1,
+          "in": 682,
+          "out": 205
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0147",
+      "db": "car_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS model_count FROM model_list ml JOIN car_makers cm ON ml.Maker = cm.Id WHERE cm.FullName = 'American Motor Company';",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6526,
+      "output_tokens": 983,
+      "cache_read_tokens": 4784,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 4341,
+          "out": 632
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1539,
+          "out": 169
+        },
+        "validator": {
+          "calls": 1,
+          "in": 646,
+          "out": 182
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0148",
+      "db": "car_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS model_count FROM model_list ml JOIN car_makers cm ON ml.Maker = cm.Id WHERE cm.FullName = 'American Motor Company';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4314,
+      "output_tokens": 1063,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2039,
+          "out": 646
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1584,
+          "out": 136
+        },
+        "validator": {
+          "calls": 1,
+          "in": 691,
+          "out": 281
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0168",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT c.MakeId, c.Make\nFROM car_names c\nJOIN cars_data d ON c.MakeId = d.Id\nWHERE d.Cylinders < 4\n  AND d.Horsepower GLOB '[0-9]*' AND d.Horsepower NOT GLOB '*[^0-9]*'\n  AND CAST(d.Horsepower AS INTEGER) <> (\n    SELECT MIN(CAST(Horsepower AS INTEGER))\n    FROM cars_data\n    WHERE Horsepower GLOB '[0-9]*' AND Horsepower NOT GLOB '*[^0-9]*'\n  )\nORDER BY c.MakeId\nLIMIT 50;",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 8038,
+      "output_tokens": 3070,
+      "cache_read_tokens": 3748,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2060,
+          "out": 784
+        },
+        "sql": {
+          "calls": 2,
+          "in": 4956,
+          "out": 1362
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1022,
+          "out": 924
+        }
+      },
+      "security": [],
+      "review": "The outer WHERE clause does not apply the same numeric check as the MIN subquery. In SQLite, `CAST('?' AS INTEGER)` returns 0, which is not equal to the minimum, so any car with a placeholder Horsepower like '?' and Cylinders < 4 is wrongly included. Add `AND d.Horsepower GLOB '[0-9]*' AND d.Horsepower NOT GLOB '*[^0-9]*'` to the outer WHERE clause, then re-run and confirm the 4 returned rows still hold.",
+      "seconds": 14.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0176",
+      "db": "car_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT cm.Id, cm.Maker\nFROM car_makers cm\nJOIN model_list ml ON ml.Maker = cm.Id\nJOIN car_names cn ON cn.Model = ml.Model\nJOIN cars_data cd ON cd.Id = cn.MakeId\nGROUP BY cm.Id, cm.Maker\nHAVING COUNT(DISTINCT ml.Model) >= 2 AND COUNT(DISTINCT cd.Id) > 3;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5136,
+      "output_tokens": 1669,
+      "cache_read_tokens": 2844,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2051,
+          "out": 756
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2115,
+          "out": 289
+        },
+        "validator": {
+          "calls": 1,
+          "in": 970,
+          "out": 624
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0184",
+      "db": "flight_2",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Airline, Abbreviation FROM airlines WHERE Country = 'USA';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4021,
+      "output_tokens": 509,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1887,
+          "out": 378
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1454,
+          "out": 124
+        },
+        "validator": {
+          "calls": 1,
+          "in": 680,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0185",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT AirportCode, AirportName FROM airports WHERE TRIM(City) = 'Anthony';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3939,
+      "output_tokens": 626,
+      "cache_read_tokens": 2691,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1882,
+          "out": 513
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1449,
+          "out": 106
+        },
+        "validator": {
+          "calls": 1,
+          "in": 608,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0192",
+      "db": "flight_2",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS number_of_flights FROM flights;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3769,
+      "output_tokens": 429,
+      "cache_read_tokens": 2691,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1874,
+          "out": 300
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1390,
+          "out": 122
+        },
+        "validator": {
+          "calls": 1,
+          "in": 505,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0210",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS flights_arriving_in_aberdeen FROM flights f JOIN airports a ON TRIM(f.DestAirport) = a.AirportCode WHERE TRIM(a.City) = 'Aberdeen';",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6773,
+      "output_tokens": 1236,
+      "cache_read_tokens": 4478,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 4199,
+          "out": 854
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1792,
+          "out": 191
+        },
+        "validator": {
+          "calls": 1,
+          "in": 782,
+          "out": 191
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0226",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH t AS (\n  SELECT TRIM(SourceAirport) AS code FROM flights\n  UNION ALL\n  SELECT TRIM(DestAirport) FROM flights\n),\nc AS (\n  SELECT code, COUNT(*) AS n\n  FROM t\n  WHERE code IS NOT NULL AND code <> ''\n  GROUP BY code\n)\nSELECT code AS AirportCode, n AS FlightCount\nFROM c\nWHERE n = (SELECT MAX(n) FROM c);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4239,
+      "output_tokens": 1389,
+      "cache_read_tokens": 2691,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1882,
+          "out": 656
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1538,
+          "out": 571
+        },
+        "validator": {
+          "calls": 1,
+          "in": 819,
+          "out": 162
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0228",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH c AS (\n  SELECT a.AirportCode,\n         (SELECT COUNT(*) FROM flights f WHERE TRIM(f.SourceAirport) = a.AirportCode)\n       + (SELECT COUNT(*) FROM flights f WHERE TRIM(f.DestAirport) = a.AirportCode) AS n\n  FROM airports a\n)\nSELECT AirportCode, n AS flight_count\nFROM c\nWHERE n = (SELECT MIN(n) FROM c);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4505,
+      "output_tokens": 1740,
+      "cache_read_tokens": 2691,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1880,
+          "out": 686
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1774,
+          "out": 707
+        },
+        "validator": {
+          "calls": 1,
+          "in": 851,
+          "out": 347
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 9.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0246",
+      "db": "flight_2",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT f.FlightNo FROM flights f JOIN airlines a ON f.Airline = a.uid WHERE a.Airline = 'United Airlines' ORDER BY f.FlightNo",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6546,
+      "output_tokens": 1280,
+      "cache_read_tokens": 3595,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1885,
+          "out": 497
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3957,
+          "out": 413
+        },
+        "validator": {
+          "calls": 1,
+          "in": 704,
+          "out": 370
+        }
+      },
+      "security": [],
+      "review": "The query has `LIMIT 50` and the result returned exactly 50 rows, so the list is likely truncated and the user is missing flight numbers. Remove the `LIMIT 50` clause (keeping `SELECT DISTINCT f.FlightNo ... ORDER BY f.FlightNo`) and re-run to get the complete list.",
+      "seconds": 6.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0249",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT FlightNo FROM flights WHERE TRIM(DestAirport) = 'APG';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4110,
+      "output_tokens": 1065,
+      "cache_read_tokens": 2691,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1888,
+          "out": 581
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1535,
+          "out": 281
+        },
+        "validator": {
+          "calls": 1,
+          "in": 687,
+          "out": 203
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0254",
+      "db": "flight_2",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT f.FlightNo FROM flights f JOIN airports a ON TRIM(f.DestAirport) = a.AirportCode WHERE TRIM(a.City) = 'Aberdeen' ORDER BY f.FlightNo LIMIT 50",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6720,
+      "output_tokens": 1764,
+      "cache_read_tokens": 3595,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1888,
+          "out": 693
+        },
+        "sql": {
+          "calls": 2,
+          "in": 4063,
+          "out": 564
+        },
+        "validator": {
+          "calls": 1,
+          "in": 769,
+          "out": 507
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 10.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0294",
+      "db": "employee_hire_evaluation",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT District FROM shop WHERE Number_products < 3000 INTERSECT SELECT District FROM shop WHERE Number_products > 10000",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 7540,
+      "output_tokens": 1199,
+      "cache_read_tokens": 2712,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2000,
+          "out": 520
+        },
+        "sql": {
+          "calls": 3,
+          "in": 5540,
+          "out": 679
+        }
+      },
+      "security": [],
+      "review": "",
+      "seconds": 6.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0296",
+      "db": "employee_hire_evaluation",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT Location) AS distinct_store_locations FROM shop;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3926,
+      "output_tokens": 541,
+      "cache_read_tokens": 2791,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1978,
+          "out": 404
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1404,
+          "out": 130
+        },
+        "validator": {
+          "calls": 1,
+          "in": 544,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0306",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT Template_ID) AS different_templates_used FROM Documents;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4022,
+      "output_tokens": 606,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2069,
+          "out": 463
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1397,
+          "out": 136
+        },
+        "validator": {
+          "calls": 1,
+          "in": 556,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0307",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT d.Document_ID) AS document_count FROM Documents d JOIN Templates t ON d.Template_ID = t.Template_ID WHERE t.Template_Type_Code = 'PPT';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4736,
+      "output_tokens": 1020,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2074,
+          "out": 631
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1914,
+          "out": 315
+        },
+        "validator": {
+          "calls": 1,
+          "in": 748,
+          "out": 74
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0308",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT d.Document_ID) AS document_count FROM Documents d JOIN Templates t ON d.Template_ID = t.Template_ID WHERE t.Template_Type_Code = 'PPT'",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4868,
+      "output_tokens": 1127,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2072,
+          "out": 808
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1981,
+          "out": 188
+        },
+        "validator": {
+          "calls": 1,
+          "in": 815,
+          "out": 131
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0315",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT t.Template_ID FROM Templates t WHERE NOT EXISTS (SELECT 1 FROM Documents d WHERE d.Template_ID = t.Template_ID) ORDER BY t.Template_ID LIMIT 50;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4527,
+      "output_tokens": 698,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2070,
+          "out": 480
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1798,
+          "out": 211
+        },
+        "validator": {
+          "calls": 1,
+          "in": 659,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0321",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT Template_Type_Code FROM Templates;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4263,
+      "output_tokens": 627,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2071,
+          "out": 476
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1608,
+          "out": 144
+        },
+        "validator": {
+          "calls": 1,
+          "in": 584,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0350",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Template_Type_Description FROM Ref_Template_Types WHERE Template_Type_Code = 'AD';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4035,
+      "output_tokens": 545,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2072,
+          "out": 398
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1383,
+          "out": 140
+        },
+        "validator": {
+          "calls": 1,
+          "in": 580,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0351",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Template_Type_Code FROM Ref_Template_Types WHERE Template_Type_Description = 'Book';",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6666,
+      "output_tokens": 898,
+      "cache_read_tokens": 4858,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 4626,
+          "out": 781
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1423,
+          "out": 110
+        },
+        "validator": {
+          "calls": 1,
+          "in": 617,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0370",
+      "db": "cre_Doc_Template_Mgt",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT Documents.Document_ID, Documents.Document_Name, COUNT(Paragraphs.Paragraph_ID) AS Paragraph_Count FROM Documents LEFT JOIN Paragraphs ON Paragraphs.Document_ID = Documents.Document_ID GROUP BY Documents.Document_ID, Documents.Document_Name;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4591,
+      "output_tokens": 684,
+      "cache_read_tokens": 2881,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2081,
+          "out": 389
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1618,
+          "out": 288
+        },
+        "validator": {
+          "calls": 1,
+          "in": 892,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0381",
+      "db": "course_teach",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(Teacher_ID) AS teacher_count FROM teacher;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3499,
+      "output_tokens": 435,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1667,
+          "out": 292
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1328,
+          "out": 136
+        },
+        "validator": {
+          "calls": 1,
+          "in": 504,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0406",
+      "db": "course_teach",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT t.Name, COUNT(DISTINCT ca.Course_ID) AS Course_Count FROM teacher t LEFT JOIN course_arrange ca ON ca.Teacher_ID = t.Teacher_ID GROUP BY t.Teacher_ID, t.Name ORDER BY t.Name;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4332,
+      "output_tokens": 815,
+      "cache_read_tokens": 2484,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1678,
+          "out": 573
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1812,
+          "out": 235
+        },
+        "validator": {
+          "calls": 1,
+          "in": 842,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0428",
+      "db": "museum_visit",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS museum_count FROM museum WHERE Open_Year GLOB '[0-9][0-9][0-9][0-9]' AND (CAST(Open_Year AS INTEGER) > 2013 OR CAST(Open_Year AS INTEGER) < 2008)",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 7936,
+      "output_tokens": 2128,
+      "cache_read_tokens": 2712,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1739,
+          "out": 609
+        },
+        "sql": {
+          "calls": 3,
+          "in": 5503,
+          "out": 802
+        },
+        "validator": {
+          "calls": 1,
+          "in": 694,
+          "out": 717
+        }
+      },
+      "security": [],
+      "review": "The SQL does not enforce the brief's requirement that non-numeric Open_Year values drop out. In SQLite, `CAST('' AS INTEGER)` and `CAST('unknown' AS INTEGER)` both yield 0, which is less than 2008, so such rows would be miscounted as \"before 2008.\" Add a numeric guard, e.g. `WHERE Open_Year GLOB '[0-9][0-9][0-9][0-9]' AND (CAST(Open_Year AS INTEGER) > 2013 OR CAST(Open_Year AS INTEGER) < 2008)`, and confirm the stored formats before returning the result.",
+      "seconds": 13.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0429",
+      "db": "wta_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS total_players FROM players;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3498,
+      "output_tokens": 443,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1796,
+          "out": 325
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1229,
+          "out": 111
+        },
+        "validator": {
+          "calls": 1,
+          "in": 473,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0434",
+      "db": "wta_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT first_name,\n       CASE WHEN birth_date IS NULL THEN NULL\n            ELSE substr(CAST(birth_date AS TEXT),1,4) || '-' || substr(CAST(birth_date AS TEXT),5,2) || '-' || substr(CAST(birth_date AS TEXT),7,2)\n       END AS birth_date\nFROM players\nWHERE country_code = 'USA';",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 8211,
+      "output_tokens": 1809,
+      "cache_read_tokens": 5226,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 3851,
+          "out": 561
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3501,
+          "out": 837
+        },
+        "validator": {
+          "calls": 1,
+          "in": 859,
+          "out": 411
+        }
+      },
+      "security": [],
+      "review": "The query adds `LIMIT 50`, which the question does not ask for, and the result has exactly 50 rows, so it is likely truncated. Remove the `LIMIT 50` clause so all USA players are returned. The rest of the query is fine: it reads only the `players` table, filters on `country_code = 'USA'`, and formats `birth_date` while keeping NULLs.",
+      "seconds": 11.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0437",
+      "db": "wta_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT AVG(winner_rank) AS avg_winner_rank FROM matches;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4040,
+      "output_tokens": 530,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1802,
+          "out": 393
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1668,
+          "out": 130
+        },
+        "validator": {
+          "calls": 1,
+          "in": 570,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0439",
+      "db": "wta_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT MAX(loser_rank) AS highest_loser_rank FROM matches;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4079,
+      "output_tokens": 657,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1803,
+          "out": 512
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1690,
+          "out": 138
+        },
+        "validator": {
+          "calls": 1,
+          "in": 586,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0444",
+      "db": "wta_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT loser_name) AS distinct_loser_names FROM matches;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4019,
+      "output_tokens": 554,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1797,
+          "out": 415
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1660,
+          "out": 132
+        },
+        "validator": {
+          "calls": 1,
+          "in": 562,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0459",
+      "db": "wta_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH totals AS (\n  SELECT r.player_id, SUM(COALESCE(r.tours, 0)) AS total_tours\n  FROM rankings r\n  GROUP BY r.player_id\n)\nSELECT p.first_name, p.country_code\nFROM totals t\nJOIN players p ON p.player_id = t.player_id\nWHERE t.total_tours = (SELECT MAX(total_tours) FROM totals);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4144,
+      "output_tokens": 1055,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1808,
+          "out": 786
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1514,
+          "out": 262
+        },
+        "validator": {
+          "calls": 1,
+          "in": 822,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0464",
+      "db": "wta_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "WITH counts AS (\n  SELECT winner_id, MAX(winner_name) AS winner_name, COUNT(*) AS wins\n  FROM matches\n  GROUP BY winner_id\n),\ntop AS (\n  SELECT * FROM counts WHERE wins = (SELECT MAX(wins) FROM counts)\n),\nlatest AS (\n  SELECT m.winner_id, m.winner_rank_points,\n         ROW_NUMBER() OVER (PARTITION BY m.winner_id ORDER BY m.tourney_date DESC, m.match_num DESC) AS rn\n  FROM matches m\n  WHERE m.winner_id IN (SELECT winner_id FROM top)\n)\nSELECT t.winner_name, t.wins AS matches_won, l.winner_rank_points AS rank_points\nFROM top t\nJOIN latest l ON l.winner_id = t.winner_id AND l.rn = 1\nORDER BY t.winner_name;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4608,
+      "output_tokens": 1737,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1815,
+          "out": 584
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1791,
+          "out": 883
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1002,
+          "out": 270
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0476",
+      "db": "wta_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT country_code, COUNT(player_id) AS player_count FROM players WHERE country_code IS NOT NULL GROUP BY country_code HAVING COUNT(player_id) = (SELECT MAX(c) FROM (SELECT COUNT(player_id) AS c FROM players WHERE country_code IS NOT NULL GROUP BY country_code))",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3726,
+      "output_tokens": 706,
+      "cache_read_tokens": 2613,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1800,
+          "out": 442
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1286,
+          "out": 257
+        },
+        "validator": {
+          "calls": 1,
+          "in": 640,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0506",
+      "db": "battle_death",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT note FROM death WHERE note LIKE '%East%';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4002,
+      "output_tokens": 998,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2039,
+          "out": 493
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1390,
+          "out": 314
+        },
+        "validator": {
+          "calls": 1,
+          "in": 573,
+          "out": 191
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0508",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT line_1, line_2 FROM Addresses;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5229,
+      "output_tokens": 402,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3055,
+          "out": 268
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1387,
+          "out": 127
+        },
+        "validator": {
+          "calls": 1,
+          "in": 787,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0524",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT section_name, section_description FROM Sections;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4961,
+      "output_tokens": 510,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3057,
+          "out": 389
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1325,
+          "out": 114
+        },
+        "validator": {
+          "calls": 1,
+          "in": 579,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0537",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT d.degree_summary_name, COUNT(DISTINCT e.student_id) AS student_count FROM Student_Enrolment e JOIN Degree_Programs d ON e.degree_program_id = d.degree_program_id WHERE d.degree_summary_name IN ('Bachelor', 'Master', 'PHD') GROUP BY d.degree_summary_name ORDER BY student_count DESC LIMIT 1",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5713,
+      "output_tokens": 1414,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3061,
+          "out": 643
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1794,
+          "out": 244
+        },
+        "validator": {
+          "calls": 1,
+          "in": 858,
+          "out": 527
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0544",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT s.semester_name FROM Semesters s WHERE NOT EXISTS (SELECT 1 FROM Student_Enrolment se WHERE se.semester_id = s.semester_id);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5486,
+      "output_tokens": 784,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3058,
+          "out": 594
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1665,
+          "out": 183
+        },
+        "validator": {
+          "calls": 1,
+          "in": 763,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0553",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT first_name, last_name, cell_mobile_number FROM Students WHERE first_name = 'Timmothy' AND last_name = 'Ward';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5360,
+      "output_tokens": 686,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3068,
+          "out": 522
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1647,
+          "out": 157
+        },
+        "validator": {
+          "calls": 1,
+          "in": 645,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0560",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT first_name FROM Students WHERE permanent_address_id <> current_address_id;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5380,
+      "output_tokens": 733,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3065,
+          "out": 472
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1653,
+          "out": 133
+        },
+        "validator": {
+          "calls": 1,
+          "in": 662,
+          "out": 128
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0564",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT datetime(AVG(julianday(transcript_date))) AS average_transcript_date FROM Transcripts;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5046,
+      "output_tokens": 781,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3051,
+          "out": 484
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1375,
+          "out": 290
+        },
+        "validator": {
+          "calls": 1,
+          "in": 620,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0570",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT MAX(transcript_date) AS last_transcript_release FROM Transcripts;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4847,
+      "output_tokens": 422,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3051,
+          "out": 290
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1280,
+          "out": 125
+        },
+        "validator": {
+          "calls": 1,
+          "in": 516,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0573",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT t.transcript_date, t.transcript_id\nFROM Transcripts t\nLEFT JOIN Transcript_Contents tc ON tc.transcript_id = t.transcript_id\nGROUP BY t.transcript_id, t.transcript_date\nHAVING COUNT(tc.student_course_id) = (\n  SELECT MIN(cnt) FROM (\n    SELECT COUNT(tc2.student_course_id) AS cnt\n    FROM Transcripts t2\n    LEFT JOIN Transcript_Contents tc2 ON tc2.transcript_id = t2.transcript_id\n    GROUP BY t2.transcript_id\n  )\n);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5631,
+      "output_tokens": 1679,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3065,
+          "out": 569
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1604,
+          "out": 756
+        },
+        "validator": {
+          "calls": 1,
+          "in": 962,
+          "out": 354
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0577",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT current_address_id) AS different_current_addresses FROM Students;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5227,
+      "output_tokens": 611,
+      "cache_read_tokens": 3867,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3055,
+          "out": 459
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1609,
+          "out": 145
+        },
+        "validator": {
+          "calls": 1,
+          "in": 563,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0579",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT student_id, current_address_id, permanent_address_id, first_name, middle_name, last_name, cell_mobile_number, email_address, date_first_registered, date_left, other_student_details FROM Students ORDER BY last_name DESC, first_name DESC;",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 8696,
+      "output_tokens": 1830,
+      "cache_read_tokens": 4771,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 3058,
+          "out": 617
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3805,
+          "out": 703
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1833,
+          "out": 510
+        }
+      },
+      "security": [
+        "blocked: SELECT * would expose sensitive columns of 'students' (ssn); list the columns you need"
+      ],
+      "review": "APPROVE",
+      "seconds": 9.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0584",
+      "db": "student_transcripts_tracking",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT s.first_name FROM Students s LEFT JOIN Addresses a ON a.address_id = s.permanent_address_id WHERE a.country = 'Haiti' OR s.cell_mobile_number = '09700166582'",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 9193,
+      "output_tokens": 1142,
+      "cache_read_tokens": 6830,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 6577,
+          "out": 746
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1917,
+          "out": 194
+        },
+        "validator": {
+          "calls": 1,
+          "in": 699,
+          "out": 202
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0588",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Title FROM Cartoon WHERE Directed_by = 'Ben Jones';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4378,
+      "output_tokens": 494,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2286,
+          "out": 344
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1474,
+          "out": 143
+        },
+        "validator": {
+          "calls": 1,
+          "in": 618,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0590",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS cartoon_count FROM Cartoon WHERE Written_by LIKE '%Joseph Kuhr%';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4401,
+      "output_tokens": 690,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2287,
+          "out": 517
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1498,
+          "out": 166
+        },
+        "validator": {
+          "calls": 1,
+          "in": 616,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0595",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Country, COUNT(*) AS num_channels FROM TV_Channel GROUP BY Country HAVING COUNT(*) = (SELECT MAX(c) FROM (SELECT COUNT(*) AS c FROM TV_Channel GROUP BY Country)) ORDER BY num_channels DESC",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4617,
+      "output_tokens": 717,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2293,
+          "out": 357
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1652,
+          "out": 214
+        },
+        "validator": {
+          "calls": 1,
+          "in": 672,
+          "out": 146
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0596",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Country, COUNT(*) AS n FROM TV_Channel WHERE Country IS NOT NULL GROUP BY Country HAVING COUNT(*) = (SELECT MAX(c) FROM (SELECT COUNT(*) AS c FROM TV_Channel WHERE Country IS NOT NULL GROUP BY Country)) ORDER BY n DESC;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4659,
+      "output_tokens": 751,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2287,
+          "out": 505
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1666,
+          "out": 239
+        },
+        "validator": {
+          "calls": 1,
+          "in": 706,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0599",
+      "db": "tvshow",
+      "level": "",
+      "pass": false,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT series_name, Content FROM TV_Channel WHERE series_name = 'Sky Radio' OR series_name LIKE '%Sky Radio%';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4524,
+      "output_tokens": 608,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2289,
+          "out": 437
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1634,
+          "out": 164
+        },
+        "validator": {
+          "calls": 1,
+          "in": 601,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0623",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT T2.series_name FROM TV_series AS T1 JOIN TV_Channel AS T2 ON T1.Channel = T2.id WHERE T1.Episode = 'A Love of a Lifetime'",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5156,
+      "output_tokens": 676,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2306,
+          "out": 495
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2149,
+          "out": 174
+        },
+        "validator": {
+          "calls": 1,
+          "in": 701,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.1,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0633",
+      "db": "tvshow",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT T.Country FROM Cartoon C JOIN TV_Channel T ON C.Channel = T.id WHERE C.Written_by LIKE '%Todd Casey%'",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5068,
+      "output_tokens": 812,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2291,
+          "out": 626
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2017,
+          "out": 179
+        },
+        "validator": {
+          "calls": 1,
+          "in": 760,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0642",
+      "db": "tvshow",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT id FROM TV_Channel WHERE Country IN (SELECT Country FROM TV_Channel GROUP BY Country HAVING COUNT(*) > 2);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4762,
+      "output_tokens": 1408,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2289,
+          "out": 783
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1745,
+          "out": 356
+        },
+        "validator": {
+          "calls": 1,
+          "in": 728,
+          "out": 269
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0645",
+      "db": "tvshow",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT t.Package_Option FROM TV_Channel t WHERE NOT EXISTS (SELECT 1 FROM Cartoon c WHERE c.Channel = t.id AND c.Directed_by = 'Ben Jones') AND t.Package_Option IS NOT NULL LIMIT 50",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5101,
+      "output_tokens": 1322,
+      "cache_read_tokens": 3091,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2295,
+          "out": 738
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1998,
+          "out": 232
+        },
+        "validator": {
+          "calls": 1,
+          "in": 808,
+          "out": 352
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0654",
+      "db": "poker_player",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT AVG(Earnings) AS average_earnings FROM poker_player;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3449,
+      "output_tokens": 383,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1613,
+          "out": 251
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1368,
+          "out": 125
+        },
+        "validator": {
+          "calls": 1,
+          "in": 468,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0663",
+      "db": "poker_player",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT people.Name FROM poker_player INNER JOIN people ON poker_player.People_ID = people.People_ID ORDER BY poker_player.Final_Table_Made ASC",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3891,
+      "output_tokens": 676,
+      "cache_read_tokens": 2425,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1622,
+          "out": 336
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1626,
+          "out": 181
+        },
+        "validator": {
+          "calls": 1,
+          "in": 643,
+          "out": 159
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0696",
+      "db": "voter_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(*) AS vote_count FROM VOTES WHERE TRIM(state) IN ('NY', 'CA');",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4205,
+      "output_tokens": 837,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1891,
+          "out": 674
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1652,
+          "out": 156
+        },
+        "validator": {
+          "calls": 1,
+          "in": 662,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0698",
+      "db": "voter_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT CAST(phone_number / 10000000 AS INTEGER) AS area_code, COUNT(DISTINCT phone_number) AS distinct_callers, COUNT(*) AS total_votes FROM VOTES GROUP BY area_code ORDER BY distinct_callers DESC, area_code;",
+      "error": null,
+      "llm_calls": 5,
+      "input_tokens": 8866,
+      "output_tokens": 2197,
+      "cache_read_tokens": 4503,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1884,
+          "out": 697
+        },
+        "sql": {
+          "calls": 3,
+          "in": 6179,
+          "out": 858
+        },
+        "validator": {
+          "calls": 1,
+          "in": 803,
+          "out": 642
+        }
+      },
+      "security": [],
+      "review": "The top group has only 1 distinct caller and 1 total vote, so every area code may be tied at 1 and `LIMIT 1` hides the ties. Run `SELECT COUNT(*) FROM VOTES` to check the table size, drop the LIMIT (or check that the max count is unique), and verify that `MIN(phone_number)` and `MAX(phone_number)` are both 10-digit values before reporting 718 as the answer.",
+      "seconds": 12.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0715",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Population, LifeExpectancy FROM country WHERE Name = 'Brazil';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4312,
+      "output_tokens": 557,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2032,
+          "out": 416
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1713,
+          "out": 134
+        },
+        "validator": {
+          "calls": 1,
+          "in": 567,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0729",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT SUM(Population) AS total_population FROM city WHERE District = 'Gelderland';",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 6238,
+      "output_tokens": 711,
+      "cache_read_tokens": 4776,
+      "agents": {
+        "schema": {
+          "calls": 2,
+          "in": 4267,
+          "out": 560
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1389,
+          "out": 144
+        },
+        "validator": {
+          "calls": 1,
+          "in": 582,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0746",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT c.Name FROM country c WHERE EXISTS (SELECT 1 FROM countrylanguage l WHERE l.CountryCode = c.Code AND l.Language = 'English') AND EXISTS (SELECT 1 FROM countrylanguage l WHERE l.CountryCode = c.Code AND l.Language = 'French') ORDER BY c.Name",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4938,
+      "output_tokens": 1204,
+      "cache_read_tokens": 2840,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2029,
+          "out": 707
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2058,
+          "out": 231
+        },
+        "validator": {
+          "calls": 1,
+          "in": 851,
+          "out": 266
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.9,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0748",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT c.Name FROM country c WHERE EXISTS (SELECT 1 FROM countrylanguage l WHERE l.CountryCode = c.Code AND l.Language = 'English' AND l.IsOfficial = 'T') AND EXISTS (SELECT 1 FROM countrylanguage l WHERE l.CountryCode = c.Code AND l.Language = 'French' AND l.IsOfficial = 'T')",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4976,
+      "output_tokens": 1076,
+      "cache_read_tokens": 2840,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2032,
+          "out": 645
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2073,
+          "out": 261
+        },
+        "validator": {
+          "calls": 1,
+          "in": 871,
+          "out": 170
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0775",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Name FROM country WHERE Continent = 'Africa' AND Population < (SELECT MIN(Population) FROM country WHERE Continent = 'Asia');",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4535,
+      "output_tokens": 1972,
+      "cache_read_tokens": 2840,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2036,
+          "out": 639
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1797,
+          "out": 431
+        },
+        "validator": {
+          "calls": 1,
+          "in": 702,
+          "out": 902
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 11.5,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0795",
+      "db": "world_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT District, COUNT(*) AS num_cities FROM city WHERE Population > (SELECT AVG(Population) FROM city) GROUP BY District ORDER BY num_cities DESC",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 5985,
+      "output_tokens": 1266,
+      "cache_read_tokens": 3744,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2036,
+          "out": 422
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3227,
+          "out": 401
+        },
+        "validator": {
+          "calls": 1,
+          "in": 722,
+          "out": 443
+        }
+      },
+      "security": [],
+      "review": "The query adds `LIMIT 50`, which the user did not ask for. The result has exactly 50 rows, so it is likely truncated and omits districts that qualify. Remove `LIMIT 50` so every district with cities above the global average is returned, then re-run and confirm the row count. The global `AVG(Population)` subquery, the strict `>` comparison, and the grouping are correct.",
+      "seconds": 9.6,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0798",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Continent, AVG(LifeExpectancy) AS avg_life_expectancy, SUM(Population) AS total_population FROM country GROUP BY Continent HAVING AVG(LifeExpectancy) < 72;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4678,
+      "output_tokens": 930,
+      "cache_read_tokens": 2840,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2047,
+          "out": 542
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1836,
+          "out": 206
+        },
+        "validator": {
+          "calls": 1,
+          "in": 795,
+          "out": 182
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0808",
+      "db": "world_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Name FROM country WHERE Continent = 'Europe' AND Population = 80000",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5576,
+      "output_tokens": 483,
+      "cache_read_tokens": 3744,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2042,
+          "out": 325
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3534,
+          "out": 158
+        }
+      },
+      "security": [],
+      "review": "",
+      "seconds": 3.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0813",
+      "db": "world_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT TRIM(Name) AS Name FROM city WHERE Population BETWEEN 160000 AND 900000",
+      "error": null,
+      "llm_calls": 4,
+      "input_tokens": 5769,
+      "output_tokens": 987,
+      "cache_read_tokens": 3744,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2037,
+          "out": 308
+        },
+        "sql": {
+          "calls": 2,
+          "in": 3104,
+          "out": 313
+        },
+        "validator": {
+          "calls": 1,
+          "in": 628,
+          "out": 366
+        }
+      },
+      "security": [],
+      "review": "The query has `LIMIT 50`, and the result returned exactly 50 rows, so the answer is likely truncated. The question asks for all cities in the population range, not a sample. Remove the `LIMIT 50` clause (or, if a cap is needed, paginate and tell the user the result is partial) and re-run to confirm the row count.",
+      "seconds": 5.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0835",
+      "db": "orchestra",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT COUNT(DISTINCT Nationality) AS num_nationalities FROM conductor;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4274,
+      "output_tokens": 504,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2288,
+          "out": 362
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1458,
+          "out": 135
+        },
+        "validator": {
+          "calls": 1,
+          "in": 528,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0846",
+      "db": "orchestra",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT c.Name FROM conductor c JOIN orchestra o ON o.Conductor_ID = c.Conductor_ID WHERE o.Year_of_Founded > 2008",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4854,
+      "output_tokens": 865,
+      "cache_read_tokens": 3098,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2299,
+          "out": 444
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1835,
+          "out": 178
+        },
+        "validator": {
+          "calls": 1,
+          "in": 720,
+          "out": 243
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 6.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0879",
+      "db": "network_1",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT grade FROM Highschooler WHERE grade IS NOT NULL GROUP BY grade HAVING COUNT(*) = (SELECT MAX(c) FROM (SELECT COUNT(*) AS c FROM Highschooler WHERE grade IS NOT NULL GROUP BY grade));",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3504,
+      "output_tokens": 1029,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1560,
+          "out": 329
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1294,
+          "out": 260
+        },
+        "validator": {
+          "calls": 1,
+          "in": 650,
+          "out": 440
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0896",
+      "db": "network_1",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT h.name FROM Highschooler h WHERE NOT EXISTS (SELECT 1 FROM Friend f WHERE f.student_id = h.ID)",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3723,
+      "output_tokens": 775,
+      "cache_read_tokens": 2366,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1557,
+          "out": 411
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1507,
+          "out": 159
+        },
+        "validator": {
+          "calls": 1,
+          "in": 659,
+          "out": 205
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0945",
+      "db": "dog_kennels",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT DISTINCT p.first_name, p.last_name FROM Professionals p JOIN Treatments t ON t.professional_id = p.professional_id WHERE t.cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM Treatments)",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5540,
+      "output_tokens": 875,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2949,
+          "out": 554
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1810,
+          "out": 218
+        },
+        "validator": {
+          "calls": 1,
+          "in": 781,
+          "out": 103
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.8,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0970",
+      "db": "dog_kennels",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT role_code, street, city, state FROM Professionals WHERE city LIKE '%West%';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5208,
+      "output_tokens": 1082,
+      "cache_read_tokens": 3743,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2949,
+          "out": 599
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1562,
+          "out": 133
+        },
+        "validator": {
+          "calls": 1,
+          "in": 697,
+          "out": 350
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 7.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0989",
+      "db": "dog_kennels",
+      "level": "",
+      "pass": false,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT MAX(CAST(age AS REAL)) AS oldest_dog_age FROM Dogs WHERE age IS NOT NULL AND TRIM(age) <> '' AND age NOT GLOB '*[^0-9.]*' AND age GLOB '*[0-9]*';",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5423,
+      "output_tokens": 1425,
+      "cache_read_tokens": 3743,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2932,
+          "out": 465
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1840,
+          "out": 462
+        },
+        "validator": {
+          "calls": 1,
+          "in": 651,
+          "out": 498
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.4,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0990",
+      "db": "dog_kennels",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT charge_type, charge_amount FROM Charges ORDER BY charge_type;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 4926,
+      "output_tokens": 483,
+      "cache_read_tokens": 3743,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2937,
+          "out": 344
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1395,
+          "out": 132
+        },
+        "validator": {
+          "calls": 1,
+          "in": 594,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.2,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-0999",
+      "db": "dog_kennels",
+      "level": "",
+      "pass": false,
+      "lenient_pass": false,
+      "status": "ok",
+      "sql": "SELECT p.first_name, tt.treatment_type_description FROM Treatments t JOIN Professionals p ON t.professional_id = p.professional_id JOIN Treatment_Types tt ON t.treatment_type_code = tt.treatment_type_code LIMIT 50",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 5962,
+      "output_tokens": 1592,
+      "cache_read_tokens": 3743,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 2938,
+          "out": 738
+        },
+        "sql": {
+          "calls": 1,
+          "in": 2015,
+          "out": 430
+        },
+        "validator": {
+          "calls": 1,
+          "in": 1009,
+          "out": 424
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-1003",
+      "db": "singer",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Name FROM singer ORDER BY Net_Worth_Millions ASC;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3618,
+      "output_tokens": 1414,
+      "cache_read_tokens": 904,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1610,
+          "out": 292
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1429,
+          "out": 344
+        },
+        "validator": {
+          "calls": 1,
+          "in": 579,
+          "out": 778
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 8.3,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-1011",
+      "db": "singer",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Name FROM singer WHERE Net_Worth_Millions = (SELECT MAX(Net_Worth_Millions) FROM singer WHERE Net_Worth_Millions IS NOT NULL);",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3610,
+      "output_tokens": 489,
+      "cache_read_tokens": 2417,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1607,
+          "out": 301
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1435,
+          "out": 181
+        },
+        "validator": {
+          "calls": 1,
+          "in": 568,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 3.7,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-1021",
+      "db": "singer",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT DISTINCT singer.Name FROM singer JOIN song ON song.Singer_ID = singer.Singer_ID WHERE song.Sales > 300000",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3854,
+      "output_tokens": 581,
+      "cache_read_tokens": 2417,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1611,
+          "out": 408
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1625,
+          "out": 166
+        },
+        "validator": {
+          "calls": 1,
+          "in": 618,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 4.0,
+      "gold_ok": true
+    },
+    {
+      "id": "spider-1028",
+      "db": "singer",
+      "level": "",
+      "pass": true,
+      "lenient_pass": true,
+      "status": "ok",
+      "sql": "SELECT Citizenship FROM singer WHERE Birth_Year < 1945 INTERSECT SELECT Citizenship FROM singer WHERE Birth_Year > 1955;",
+      "error": null,
+      "llm_calls": 3,
+      "input_tokens": 3925,
+      "output_tokens": 946,
+      "cache_read_tokens": 2417,
+      "agents": {
+        "schema": {
+          "calls": 1,
+          "in": 1619,
+          "out": 649
+        },
+        "sql": {
+          "calls": 1,
+          "in": 1594,
+          "out": 290
+        },
+        "validator": {
+          "calls": 1,
+          "in": 712,
+          "out": 7
+        }
+      },
+      "security": [],
+      "review": "APPROVE",
+      "seconds": 5.6,
+      "gold_ok": true
+    }
+  ]
+}

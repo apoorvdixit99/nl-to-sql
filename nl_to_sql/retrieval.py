@@ -171,7 +171,7 @@ _EMBEDDER = None
 
 def _have_embedder() -> bool:
     try:
-        import fastembed  # noqa: F401
+        import fastembed  # noqa: F401  (availability check)
         return True
     except ImportError:
         return False

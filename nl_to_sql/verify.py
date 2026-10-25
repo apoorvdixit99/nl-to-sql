@@ -47,7 +47,7 @@ Result ({n} rows, first {shown} shown):
 
 Automatic checks noticed: {flags}
 
-Judge only against the question's wording. Extra helper columns are fine. A tie returning several rows is fine.
+Judge only against the question's wording. {columns_rule} A tie returning several rows is fine.
 Reply with exactly one line: OK, or ISSUE: <what is wrong and how to fix it>."""
 
 
@@ -55,7 +55,7 @@ def review_prompt(question: str, sql: str, res: QueryResult, flags: list[str], m
     shown = res.rows[:max_rows]
     table = "\n".join(["\t".join(res.columns)] + ["\t".join(map(str, r)) for r in shown])
     return REVIEW_PROMPT.format(question=question, sql=sql, n=len(res.rows), shown=len(shown),
-                                table=table, flags="; ".join(flags) or "nothing")
+                                table=table, flags="; ".join(flags) or "nothing", columns_rule=columns_rule())
 
 
 def parse_review(text: str) -> str | None:
@@ -64,3 +64,21 @@ def parse_review(text: str) -> str | None:
     if t.upper().startswith("OK"):
         return None
     return t.split(":", 1)[1].strip() if t.upper().startswith("ISSUE") and ":" in t else t
+
+
+def style_rule() -> str:
+    """Prompt line for the SQL writer, per config.ANSWER_STYLE."""
+    from . import config
+    if config.ANSWER_STYLE == "exact":
+        return ("\n- Select only the columns the question asks for, in the order it mentions them. Don't add IDs, "
+                "helper or ranking columns unless asked. Keep duplicate rows unless the question asks for distinct "
+                "or unique values.")
+    return "\n- You may add a few helpful context columns, such as a name next to an ID or the value used for ranking."
+
+
+def columns_rule() -> str:
+    """How reviewers should treat extra columns, per config.ANSWER_STYLE."""
+    from . import config
+    if config.ANSWER_STYLE == "exact":
+        return "The result must contain exactly the requested columns: extra columns are a defect."
+    return "Extra helper columns are fine."
