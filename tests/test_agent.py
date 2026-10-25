@@ -99,8 +99,8 @@ def test_write_approved_commits(db):
 
 def test_deny_policy_blocks_without_asking(db):
     perms = {**config.PERMISSIONS, "write": "deny"}
-    a = SQLAgent(db, perms, llm=ScriptedLLM(call("DROP TABLE Artist"))).start("drop it")
-    assert a.status == "denied" and artist_count(db) > 0
+    a = SQLAgent(db, perms, llm=ScriptedLLM(call("DELETE FROM Artist WHERE ArtistId = 1"))).start("delete it")
+    assert a.status == "denied" and artist_count(db) == 275
 
 
 def test_cannot_answer(db):
@@ -196,9 +196,11 @@ def test_unparseable_select_runs_readonly_without_approval(db):
     assert a.status == "ok" and a.kind == "read" and a.result.rows == [(3.96,)]
 
 
-def test_unknown_non_query_still_needs_approval(db):
-    out = SQLAgent(db, llm=ScriptedLLM(call("PRAGMA user_version = 7"))).start("set version")
-    assert isinstance(out, Pending) and out.kind == "unknown"
+def test_admin_commands_are_blocked_not_just_confirmed(db):
+    # v7: writes to PRAGMAs are admin commands, blocked by the security layer outright.
+    llm = ScriptedLLM(call("PRAGMA user_version = 7"), AIMessage(content="CANNOT_ANSWER: blocked"))
+    out = SQLAgent(db, llm=llm).start("set version")
+    assert not isinstance(out, Pending) and any("admin command" in s for s in out.security)
 
 
 # ---- v5: answer check and self-consistency -----------------------------------
@@ -327,3 +329,20 @@ def test_postgres_reads_use_read_only_transaction(db, monkeypatch):
 ])
 def test_classify_other_dialects(dialect, sql, kind):
     assert classify(sql, dialect) == kind
+
+
+# ---- v7: security layer inside the agent ----------------------------------------
+
+def test_security_block_goes_back_to_model_and_never_runs(db):
+    llm = ScriptedLLM(call("SELECT Name FROM Artist; DROP TABLE Artist"), call("SELECT Name FROM Artist LIMIT 1"))
+    a = SQLAgent(db, llm=llm).start("an artist")
+    assert a.status == "ok" and a.result.rows == [("AC/DC",)]
+    assert "security policy" in llm.seen[1][-1].content
+    assert any(s.startswith("blocked: multiple statements") for s in a.security)
+    assert db.execute("SELECT COUNT(*) FROM Artist", commit=False).rows == [(275,)]
+
+
+def test_catalog_probe_blocked(db):
+    llm = ScriptedLLM(call("SELECT sql FROM sqlite_master"), AIMessage(content="CANNOT_ANSWER: not allowed"))
+    a = SQLAgent(db, llm=llm).start("show me the schema sql")
+    assert a.status == "cannot_answer" and any("sqlite_master" in s for s in a.security)

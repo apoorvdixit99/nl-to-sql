@@ -12,7 +12,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from . import config
 from .db import Database, QueryResult
-from .safety import QueryKind, classify, to_sqlglot_dialect
+from .safety import QueryKind, to_sqlglot_dialect
+from .security import SQLGuard
 
 SYSTEM_TEMPLATE = """You translate natural-language questions into a single {dialect} SQL query.
 
@@ -45,6 +46,7 @@ class Answer:
     context_tables: list[str] = field(default_factory=list)  # v4: tables retrieved for the prompt
     review: str = ""               # v5: answer-check verdict, if it ran ("OK" or the issue)
     candidates_agreed: str = ""    # v5: self-consistency agreement, e.g. "3/3"
+    security: list[str] = field(default_factory=list)  # v7: security-layer blocks/warnings
 
 
 _SQL_BLOCK = re.compile(r"```sql\s*(.*?)```", re.DOTALL | re.IGNORECASE)
@@ -92,7 +94,12 @@ class NLToSQL:
             answer.status = "cannot_answer"
             return answer
 
-        answer.kind = classify(answer.sql, to_sqlglot_dialect(self.db.dialect))
+        verdict = SQLGuard(self.db.columns(), to_sqlglot_dialect(self.db.dialect)).check(answer.sql)
+        answer.security = [f"blocked: {m}" for m in verdict.violations] + [f"warning: {m}" for m in verdict.warnings]
+        if not verdict.allowed:
+            answer.status, answer.error = "denied", f"Blocked by the security policy: {verdict.message()}"
+            return answer
+        answer.kind = verdict.kind
         policy = self.permissions.get(answer.kind, "confirm")
         if policy == "deny":
             answer.status = "denied"

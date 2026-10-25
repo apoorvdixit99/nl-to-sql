@@ -60,6 +60,8 @@ def render(answer: Answer, sql_already_shown: bool = False) -> None:
         else:
             console.print(f"[green]Done.[/] {res.rowcount} row(s) affected.")
 
+    for event in answer.security:
+        console.print(f"[yellow]security {event}[/]")
     extras = []
     if answer.review:
         extras.append(f"answer check: {answer.review}")

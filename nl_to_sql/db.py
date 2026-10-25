@@ -1,4 +1,5 @@
 import json
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,7 +36,15 @@ class Database:
         return self.engine.dialect.name
 
     def table_names(self) -> list[str]:
-        return sorted(inspect(self.engine).get_table_names())
+        hidden = {t.lower() for t in config.HIDDEN_TABLES}
+        return sorted(t for t in inspect(self.engine).get_table_names() if t.lower() not in hidden)
+
+    def columns(self) -> dict[str, list[str]]:
+        """{table: [column names]} for every visible table (cached). Feeds the security layer."""
+        if not hasattr(self, "_columns"):
+            insp = inspect(self.engine)
+            self._columns = {t: [c["name"] for c in insp.get_columns(t)] for t in self.table_names()}
+        return self._columns
 
     def schema(self, tables: list[str] | None = None) -> str:
         """CREATE TABLE statements plus a few sample rows per table (only the tables asked for)."""
@@ -198,8 +207,16 @@ class Database:
     def _run(engine, sql: str, commit: bool, setup: str | None = None) -> QueryResult:
         with engine.connect() as conn:
             if setup:
-                conn.execute(text(setup))
-            cursor = conn.execute(text(sql))
+                conn.execute(text(setup))  # e.g. SET TRANSACTION READ ONLY: must come first
+            clear = _apply_timeout(conn, engine.dialect.name)
+            try:
+                cursor = conn.execute(text(sql))
+            except Exception as e:
+                if "interrupted" in str(e).lower():
+                    raise TimeoutError(f"query timed out after {config.QUERY_TIMEOUT_S}s") from e
+                raise
+            finally:
+                clear()
             result = QueryResult(rowcount=cursor.rowcount)
             if cursor.returns_rows:
                 result.columns = list(cursor.keys())
@@ -211,3 +228,20 @@ class Database:
             else:
                 conn.rollback()
             return result
+
+
+def _apply_timeout(conn, dialect: str):
+    """Cap statement run time. Returns a function that removes the cap."""
+    limit = config.QUERY_TIMEOUT_S
+    if not limit:
+        return lambda: None
+    if dialect == "sqlite":
+        raw = conn.connection.driver_connection
+        deadline = time.monotonic() + limit
+        raw.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10_000)
+        return lambda: raw.set_progress_handler(None, 0)
+    if dialect == "postgresql":
+        conn.execute(text(f"SET LOCAL statement_timeout = {int(limit * 1000)}"))
+    elif dialect in ("mysql", "mariadb"):
+        conn.execute(text(f"SET SESSION max_execution_time = {int(limit * 1000)}"))
+    return lambda: None

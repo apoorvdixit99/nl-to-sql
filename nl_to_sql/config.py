@@ -74,3 +74,14 @@ PERMISSIONS = {
     "write": "confirm",
     "unknown": "confirm",
 }
+
+# --- Security layer (v7, nl_to_sql/security.py) ---
+# Deterministic checks on every statement before it runs. Violations block; warnings go
+# to the validator agent.
+SENSITIVE_COLUMN_PATTERNS = [r"passw(or)?d", r"\bssn\b", r"social_?security", r"secret", r"api_?key",
+                             r"(access|auth|refresh)_?token", r"credit_?card", r"card_?number", r"\bcvv\b"]
+HIDDEN_TABLES: list[str] = []   # tables the agents never see or query, e.g. ["users_auth"]
+ALLOW_DDL = False               # CREATE/DROP/ALTER/TRUNCATE/GRANT
+ALLOW_UNBOUNDED_WRITES = False  # UPDATE/DELETE without WHERE
+MAX_SQL_CHARS = 20000
+QUERY_TIMEOUT_S = 15            # per statement (SQLite progress handler / Postgres statement_timeout / MySQL)

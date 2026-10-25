@@ -80,6 +80,8 @@ def render_answer(a: Answer) -> None:
             st.caption(f"{len(res.rows)} row(s){more}")
         else:
             st.success(f"Done. {res.rowcount} row(s) affected.")
+    for event in a.security:
+        st.caption(f"🛡️ security {event}")
     bits = []
     if a.review:
         bits.append(f"answer check: {a.review}")
